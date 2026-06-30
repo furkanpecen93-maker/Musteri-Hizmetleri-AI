@@ -3,14 +3,12 @@ require('dotenv').config();
 
 // ── Zorunlu değişkenler ──
 const requiredEnvs = [
-  'META_PAGE_ACCESS_TOKEN',
-  'META_VERIFY_TOKEN',
   'GEMINI_API_KEY'
 ];
 
 for (const env of requiredEnvs) {
   if (!process.env[env]) {
-    console.error(`⚠️  Uyarı: ${env} tanımlı değil. İlgili özellik çalışmayacak.`);
+    throw new Error(`EnvironmentError: Gerekli ortam degiskeni eksik: ${env}`);
   }
 }
 
