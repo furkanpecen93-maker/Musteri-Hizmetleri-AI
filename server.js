@@ -217,9 +217,9 @@ app.post('/webhook/whatsapp', async (req, res) => {
 // ══════════════════════════════════════════════
 app.post('/webhook/manychat', async (req, res) => {
   try {
-    const { subscriber_id, message } = req.body;
-    const senderId = subscriber_id ? String(subscriber_id) : 'unknown_mc';
-    const messageText = (message || '').trim();
+    // Hem Custom JSON hem de Full Subscriber Data formatını destekle
+    const senderId = (req.body.subscriber_id || req.body.id) ? String(req.body.subscriber_id || req.body.id) : 'unknown_mc';
+    const messageText = (req.body.message || req.body.last_input || '').trim();
 
     if (!messageText) {
       return res.status(400).json({ error: 'Mesaj boş' });
