@@ -217,9 +217,10 @@ app.post('/webhook/whatsapp', async (req, res) => {
 // ══════════════════════════════════════════════
 app.post('/webhook/manychat', async (req, res) => {
   try {
-    // Hem Custom JSON hem de Full Subscriber Data formatını destekle
-    const senderId = (req.body.subscriber_id || req.body.id) ? String(req.body.subscriber_id || req.body.id) : 'unknown_mc';
-    const messageText = (req.body.message || req.body.last_input || '').trim();
+    // Hem doğrudan body'yi hem de { data: Full Contact Data } paketini destekle
+    const payload = req.body.data || req.body;
+    const senderId = (payload.subscriber_id || payload.id) ? String(payload.subscriber_id || payload.id) : 'unknown_mc';
+    const messageText = (payload.message || payload.last_input || '').trim();
 
     if (!messageText) {
       return res.status(400).json({ error: 'Mesaj boş' });
