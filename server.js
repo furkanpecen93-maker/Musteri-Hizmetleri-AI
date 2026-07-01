@@ -212,6 +212,75 @@ app.post('/webhook/whatsapp', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════
+// 3.5. MANYCHAT DYNAMIC BLOCK WEBHOOK
+// ManyChat "External Request" adımı buraya POST atar
+// ══════════════════════════════════════════════
+app.post('/webhook/manychat', async (req, res) => {
+  try {
+    const { subscriber_id, message } = req.body;
+    const senderId = subscriber_id ? String(subscriber_id) : 'unknown_mc';
+    const messageText = (message || '').trim();
+
+    if (!messageText) {
+      return res.status(400).json({ error: 'Mesaj boş' });
+    }
+
+    log.info('[manychat] Mesaj alındı', { senderId, len: messageText.length });
+
+    // Duplicate kontrolü
+    if (isDuplicate(senderId, messageText)) {
+      return res.json({
+        version: "v2",
+        content: { messages: [] } // Boş içerik dönerek duplicate cevabı engelle
+      });
+    }
+
+    // Mesajı kaydet
+    addMessage(senderId, 'user', messageText);
+
+    // Katalog ve geçmişi al
+    const [catalog, history] = await Promise.all([
+      getCatalog(),
+      Promise.resolve(getHistory(senderId))
+    ]);
+
+    // AI cevap üret
+    const aiResponse = await generateResponse(messageText, history, catalog);
+
+    // Cevabı kaydet
+    addMessage(senderId, 'assistant', aiResponse);
+
+    log.info('[manychat] Cevap üretildi', { senderId, len: aiResponse.length });
+
+    // ManyChat Dynamic Block v2 formatında cevap dön
+    return res.json({
+      version: "v2",
+      content: {
+        messages: [
+          {
+            type: "text",
+            text: aiResponse
+          }
+        ]
+      }
+    });
+  } catch (err) {
+    log.error('[manychat] Hata', err);
+    return res.json({
+      version: "v2",
+      content: {
+        messages: [
+          {
+            type: "text",
+            text: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.'
+          }
+        ]
+      }
+    });
+  }
+});
+
+// ══════════════════════════════════════════════
 // 4. ADMIN ENDPOINTS
 // ══════════════════════════════════════════════
 app.get('/health', (req, res) => {
