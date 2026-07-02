@@ -220,7 +220,7 @@ app.post('/webhook/manychat', async (req, res) => {
     // Hem doğrudan body'yi hem de { data: Full Contact Data } paketini destekle
     const payload = req.body.data || req.body;
     const senderId = (payload.subscriber_id || payload.id) ? String(payload.subscriber_id || payload.id) : 'unknown_mc';
-    const messageText = (payload.message || payload.last_input || '').trim();
+    const messageText = (payload.message || payload.last_input || payload.last_input_text || '').trim();
 
     if (!messageText) {
       return res.status(400).json({ error: 'Mesaj boş' });
