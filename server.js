@@ -221,6 +221,7 @@ app.post('/webhook/manychat', async (req, res) => {
     const payload = req.body.data || req.body;
     const senderId = (payload.subscriber_id || payload.id) ? String(payload.subscriber_id || payload.id) : 'unknown_mc';
     const messageText = (payload.message || payload.last_input || payload.last_input_text || '').trim();
+    const channelType = req.query.platform || 'instagram';
 
     if (!messageText) {
       return res.status(400).json({ error: 'Mesaj boş' });
@@ -232,7 +233,10 @@ app.post('/webhook/manychat', async (req, res) => {
     if (isDuplicate(senderId, messageText)) {
       return res.json({
         version: "v2",
-        content: { messages: [] } // Boş içerik dönerek duplicate cevabı engelle
+        content: {
+          type: channelType,
+          messages: [] // Boş içerik dönerek duplicate cevabı engelle
+        }
       });
     }
 
@@ -257,6 +261,7 @@ app.post('/webhook/manychat', async (req, res) => {
     return res.json({
       version: "v2",
       content: {
+        type: channelType,
         messages: [
           {
             type: "text",
@@ -267,9 +272,11 @@ app.post('/webhook/manychat', async (req, res) => {
     });
   } catch (err) {
     log.error('[manychat] Hata', err);
+    const channelType = req.query.platform || 'instagram';
     return res.json({
       version: "v2",
       content: {
+        type: channelType,
         messages: [
           {
             type: "text",

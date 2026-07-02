@@ -30,19 +30,12 @@ Müşteriler mesaj attığında bu akışın çalışması için tetikleyici ekl
 2. Sol paneldeki eylem listesinden **"External Request"** (Harici İstek) seçeneğini seçin. (Not: Bu özellik ManyChat Pro sürümü gerektirebilir).
 3. **External Request Ayarlarını Yapılandırın:**
    * **Request Type:** `POST` yapın.
-   * **Request URL:** `https://musteri-hizmetleri-ai-production-f980.up.railway.app/webhook/manychat` yazın.
+   * **Request URL:** `https://musteri-hizmetleri-ai-production-f980.up.railway.app/webhook/manychat?platform=instagram` yazın. (Not: WhatsApp için `?platform=whatsapp` kullanabilirsiniz).
    * **Headers (Başlıklar):**
      * Key: `Content-Type` | Value: `application/json` ekleyin.
    * **Body (Gönderilecek Veri):**
-     * **"Add Full Subscriber Data"** seçeneğini kaldırın ve **"Custom JSON"** seçeneğini işaretleyin.
-     * Aşağıdaki JSON şablonunu yapıştırın:
-       ```json
-       {
-         "subscriber_id": {{user_id}},
-         "message": "{{last_input}}"
-       }
-       ```
-       *(Not: ManyChat üzerinde `{{user_id}}` ve `{{last_input}}` değerlerini yazarken klavyeden `{` tuşuna basarak ManyChat sistem değişkenlerinden seçebilirsiniz).*
+     * **"Full Contact Data"** (veya **"Full Subscriber Data"**) seçeneğini işaretleyin.
+     * *(Not: "Custom JSON" seçeneği yerine "Full Contact Data" seçilmesi, ManyChat test simülatöründeki "Variables are not defined" hatasını kalıcı olarak önler. Sunucumuz bu formattaki veriyi de okuyacak hibrit desteğe zaten sahiptir, bu nedenle ek bir sunucu değişikliği gerekmez).*
    * **Response:**
      * En üstteki **"Dynamic Block"** switch'ini (açma/kapama düğmesini) aktif edin. (Bu sayede sunucumuzun döndüğü yapay zeka cevabı otomatik olarak kullanıcıya mesaj olarak iletilir).
    * **Test:**
