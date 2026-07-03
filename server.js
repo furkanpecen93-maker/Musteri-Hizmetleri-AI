@@ -166,10 +166,14 @@ async function processMessage(senderId, initialMessage, platform) {
 // ══════════════════════════════════════════════
 // 3. WHATSAPP AUTORESPONDER WEBHOOK
 // Android AutoResponder uygulaması buraya POST atar
-// ══════════════════════════════════════════════
+let lastWaPayload = {};
+app.get('/debug-wa', (req, res) => res.json(lastWaPayload));
+
 app.post('/webhook/whatsapp', async (req, res) => {
   try {
     const rawBody = typeof req.body === 'string' ? req.body : '';
+    lastWaPayload = { headers: req.headers, rawBody, query: req.query };
+    
     let payload = {};
     try {
       payload = JSON.parse(rawBody);
@@ -180,13 +184,14 @@ app.post('/webhook/whatsapp', async (req, res) => {
     log.info('[whatsapp] Gelen raw payload', payload);
     
     // AutoResponder bazen 'query' bazen 'message' olarak gönderir
-    const message = payload.message || payload.query;
+    const message = payload.message || payload.query || rawBody;
     const senderId = payload.phone || payload.sender || 'unknown_wa';
     const messageText = (message || '').trim();
 
     if (!messageText) {
       log.warn('[whatsapp] Mesaj bos geldi', rawBody);
-      return res.status(400).json({ error: 'Mesaj bos', body: rawBody });
+      // AutoResponder'in hata vermesini engellemek icin 200 donuyoruz
+      return res.json({ reply: 'Sistem baglantisi basarili! Bot hazir.' });
     }
 
     // Güvenlik kontrolü (opsiyonel)
