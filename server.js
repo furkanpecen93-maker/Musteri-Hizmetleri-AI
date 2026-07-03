@@ -11,12 +11,11 @@ const { addMessage, getHistory, isDuplicate } = require('./services/memory');
 
 const app = express();
 
-// Raw body for signature verification
-app.use(express.json({
+// Raw body for signature verification and debugging
+app.use(express.text({
   limit: '5mb',
-  verify: (req, res, buf) => { req.rawBody = buf; }
+  type: '*/*'
 }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
 app.use(express.static('public'));
@@ -170,16 +169,24 @@ async function processMessage(senderId, initialMessage, platform) {
 // ══════════════════════════════════════════════
 app.post('/webhook/whatsapp', async (req, res) => {
   try {
-    log.info('[whatsapp] Gelen raw payload', req.body);
+    const rawBody = typeof req.body === 'string' ? req.body : '';
+    let payload = {};
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (e) {
+      log.warn('[whatsapp] JSON parse hatasi', rawBody);
+    }
+    
+    log.info('[whatsapp] Gelen raw payload', payload);
     
     // AutoResponder bazen 'query' bazen 'message' olarak gönderir
-    const message = req.body.message || req.body.query;
-    const senderId = req.body.phone || req.body.sender || 'unknown_wa';
+    const message = payload.message || payload.query;
+    const senderId = payload.phone || payload.sender || 'unknown_wa';
     const messageText = (message || '').trim();
 
     if (!messageText) {
-      log.warn('[whatsapp] Mesaj bos geldi', req.body);
-      return res.status(400).json({ error: 'Mesaj bos', body: req.body, raw: req.rawBody ? req.rawBody.toString() : null });
+      log.warn('[whatsapp] Mesaj bos geldi', rawBody);
+      return res.status(400).json({ error: 'Mesaj bos', body: rawBody });
     }
 
     // Güvenlik kontrolü (opsiyonel)
@@ -228,8 +235,16 @@ app.post('/webhook/whatsapp', async (req, res) => {
 // ══════════════════════════════════════════════
 app.post('/webhook/manychat', async (req, res) => {
   try {
-    // Hem doğrudan body'yi hem de { data: Full Contact Data } paketini destekle
-    const payload = req.body.data || req.body;
+    const rawBody = typeof req.body === 'string' ? req.body : '';
+    let parsedBody = {};
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch (e) {
+      log.warn('[manychat] JSON parse hatasi', rawBody);
+    }
+    
+    // Hem dogrudan body'yi hem de { data: Full Contact Data } paketini destekle
+    const payload = parsedBody.data || parsedBody;
     const senderId = (payload.subscriber_id || payload.id) ? String(payload.subscriber_id || payload.id) : 'unknown_mc';
     const messageText = (payload.message || payload.last_input || payload.last_input_text || '').trim();
     const channelType = req.query.platform || 'instagram';
