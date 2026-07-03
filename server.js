@@ -17,6 +17,12 @@ app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
 
+// Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
+app.use(express.static('public'));
+app.get('/katalog', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
 // ══════════════════════════════════════════════
 // 1. META WEBHOOK VERIFICATION (GET)
 // Instagram + Messenger aynı endpoint'i kullanır

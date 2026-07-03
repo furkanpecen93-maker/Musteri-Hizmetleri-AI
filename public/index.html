@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peçen Toptan - Kataloglar</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1a1a1a;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .catalog-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .catalog-btn {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .catalog-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-color: #d0d0d0;
+        }
+        .icon {
+            font-size: 24px;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Peçen Toptan</h1>
+        <p>2026 Koleksiyon Katalogları</p>
+    </div>
+
+    <div class="catalog-container">
+        <a href="/kataloglar/elbise-2026.pdf" class="catalog-btn" target="_blank">
+            <span>👗 Elbise Koleksiyonu</span>
+            <span class="icon">➔</span>
+        </a>
+        
+        <a href="/kataloglar/esofman-pantolon-2026.pdf" class="catalog-btn" target="_blank">
+            <span>👖 Eşofman & Pantolon Kataloğu</span>
+            <span class="icon">➔</span>
+        </a>
+
+        <a href="/kataloglar/etek-2026.pdf" class="catalog-btn" target="_blank">
+            <span>✨ Etek Koleksiyonu</span>
+            <span class="icon">➔</span>
+        </a>
+
+        <a href="/kataloglar/kadin-ust-2026.pdf" class="catalog-btn" target="_blank">
+            <span>👚 Kadın Üst (Tshirt/Crop)</span>
+            <span class="icon">➔</span>
+        </a>
+
+        <a href="/kataloglar/spor-2026.pdf" class="catalog-btn" target="_blank">
+            <span>🏃‍♀️ Spor Koleksiyonu</span>
+            <span class="icon">➔</span>
+        </a>
+    </div>
+
+    <div class="footer">
+        © 2026 Peçen Toptan. Tüm hakları saklıdır.
+    </div>
+
+</body>
+</html>
