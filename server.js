@@ -16,6 +16,7 @@ app.use(express.json({
   limit: '5mb',
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
 app.use(express.static('public'));
@@ -169,12 +170,16 @@ async function processMessage(senderId, initialMessage, platform) {
 // ══════════════════════════════════════════════
 app.post('/webhook/whatsapp', async (req, res) => {
   try {
-    const { message, phone, sender } = req.body;
-    const senderId = phone || sender || 'unknown_wa';
+    log.info('[whatsapp] Gelen raw payload', req.body);
+    
+    // AutoResponder bazen 'query' bazen 'message' olarak gönderir
+    const message = req.body.message || req.body.query;
+    const senderId = req.body.phone || req.body.sender || 'unknown_wa';
     const messageText = (message || '').trim();
 
     if (!messageText) {
-      return res.status(400).json({ error: 'Mesaj boş' });
+      log.warn('[whatsapp] Mesaj bos geldi', req.body);
+      return res.status(400).json({ error: 'Mesaj bos' });
     }
 
     // Güvenlik kontrolü (opsiyonel)
