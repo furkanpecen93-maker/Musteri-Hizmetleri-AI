@@ -447,7 +447,7 @@ app.post('/admin/catalog/refresh', (req, res) => {
 // ══════════════════════════════════════════════
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-app.listen(config.port, () => {
+app.listen(config.port, '0.0.0.0', () => {
   log.info(`[server] ${config.businessName} Müşteri Hizmetleri AI başlatıldı`, {
     port: config.port,
     gemini: config.geminiApiKey ? '✅' : '❌',
