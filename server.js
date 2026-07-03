@@ -12,6 +12,10 @@ const { addMessage, getHistory, isDuplicate } = require('./services/memory');
 const app = express();
 
 // Raw body for signature verification and debugging
+app.use((req, res, next) => {
+  log.info(`[GELEN ISTEK] ${req.method} ${req.url}`);
+  next();
+});
 app.use(express.text({
   limit: '5mb',
   type: '*/*'
@@ -57,7 +61,15 @@ app.post('/webhook', async (req, res) => {
   res.status(200).send('EVENT_RECEIVED');
 
   try {
-    const body = req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        log.error('[webhook] JSON parse hatası', req.body);
+        return res.status(400).send('Invalid JSON');
+      }
+    }
     
     if (body.object !== 'page' && body.object !== 'instagram') {
       log.warn('[webhook] Bilinmeyen object tipi', { object: body.object });
@@ -322,27 +334,37 @@ app.post('/webhook/manychat', async (req, res) => {
 // ══════════════════════════════════════════════
 // 3.8. AUTORESPONDER YENİ YAPI (DÜZ METİN)
 // ══════════════════════════════════════════════
-app.all('/autoresponder', async (req, res) => {
+app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) => {
   try {
     let parsedBody = {};
     if (typeof req.body === 'string' && req.body.trim()) {
       try {
         parsedBody = JSON.parse(req.body);
       } catch (e) {
-        // Parse error ignore
+        // Parse error ignore - Might be x-www-form-urlencoded
+        try {
+          const params = new URLSearchParams(req.body);
+          for (const [key, value] of params.entries()) {
+            parsedBody[key] = value;
+          }
+        } catch (err) {}
       }
     } else if (typeof req.body === 'object') {
       parsedBody = req.body;
     }
 
+    const arQuery = parsedBody.query || {};
+
     const messageText = (
       req.query.message || req.query.text || req.query.msg ||
-      parsedBody.message || parsedBody.text || parsedBody.msg || ''
+      parsedBody.message || parsedBody.text || parsedBody.msg ||
+      arQuery.message || arQuery.text || arQuery.msg || ''
     ).trim();
 
     let senderId = String(
       req.query.sender || req.query.phone || req.query.number ||
-      parsedBody.sender || parsedBody.phone || parsedBody.number || 'unknown'
+      parsedBody.sender || parsedBody.phone || parsedBody.number ||
+      arQuery.sender || arQuery.phone || arQuery.number || 'unknown'
     ).trim();
 
     // Clean [test] from sender
@@ -351,7 +373,11 @@ app.all('/autoresponder', async (req, res) => {
     res.set('Content-Type', 'text/plain; charset=utf-8');
 
     if (!messageText) {
-      log.warn('[autoresponder] Mesaj boş geldi');
+      log.warn('[autoresponder] Mesaj boş geldi. Payload incelemesi:', { 
+        rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
+        query: req.query,
+        parsedBody
+      });
       return res.status(400).send('Message is required');
     }
 
@@ -374,11 +400,13 @@ app.all('/autoresponder', async (req, res) => {
 
     log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
 
-    return res.send(aiResponse);
+    // AutoResponder expects a JSON response with a "replies" array
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    return res.json({ replies: [{ message: aiResponse }] });
   } catch (err) {
     log.error('[autoresponder] Hata', err);
-    res.set('Content-Type', 'text/plain; charset=utf-8');
-    return res.status(500).send('Teknik sorun yaşıyoruz, lütfen tekrar deneyin.');
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    return res.status(500).json({ replies: [{ message: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.' }] });
   }
 });
 
