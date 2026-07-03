@@ -179,7 +179,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     if (!messageText) {
       log.warn('[whatsapp] Mesaj bos geldi', req.body);
-      return res.status(400).json({ error: 'Mesaj bos' });
+      return res.status(400).json({ error: 'Mesaj bos', body: req.body, raw: req.rawBody ? req.rawBody.toString() : null });
     }
 
     // Güvenlik kontrolü (opsiyonel)
