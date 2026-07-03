@@ -320,6 +320,69 @@ app.post('/webhook/manychat', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════
+// 3.8. AUTORESPONDER YENİ YAPI (DÜZ METİN)
+// ══════════════════════════════════════════════
+app.all('/autoresponder', async (req, res) => {
+  try {
+    let parsedBody = {};
+    if (typeof req.body === 'string' && req.body.trim()) {
+      try {
+        parsedBody = JSON.parse(req.body);
+      } catch (e) {
+        // Parse error ignore
+      }
+    } else if (typeof req.body === 'object') {
+      parsedBody = req.body;
+    }
+
+    const messageText = (
+      req.query.message || req.query.text || req.query.msg ||
+      parsedBody.message || parsedBody.text || parsedBody.msg || ''
+    ).trim();
+
+    let senderId = String(
+      req.query.sender || req.query.phone || req.query.number ||
+      parsedBody.sender || parsedBody.phone || parsedBody.number || 'unknown'
+    ).trim();
+
+    // Clean [test] from sender
+    senderId = senderId.replace(/\[test\]/g, '');
+
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+
+    if (!messageText) {
+      log.warn('[autoresponder] Mesaj boş geldi');
+      return res.status(400).send('Message is required');
+    }
+
+    log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
+
+    if (isDuplicate(senderId, messageText)) {
+      return res.send(''); 
+    }
+
+    addMessage(senderId, 'user', messageText);
+
+    const [catalog, history] = await Promise.all([
+      getCatalog(),
+      Promise.resolve(getHistory(senderId))
+    ]);
+
+    const aiResponse = await generateResponse(messageText, history, catalog);
+
+    addMessage(senderId, 'assistant', aiResponse);
+
+    log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
+
+    return res.send(aiResponse);
+  } catch (err) {
+    log.error('[autoresponder] Hata', err);
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(500).send('Teknik sorun yaşıyoruz, lütfen tekrar deneyin.');
+  }
+});
+
+// ══════════════════════════════════════════════
 // 4. ADMIN ENDPOINTS
 // ══════════════════════════════════════════════
 app.get('/health', (req, res) => {
