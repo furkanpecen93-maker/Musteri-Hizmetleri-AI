@@ -1,0 +1,24 @@
+name: Uptime Monitor
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Çalışma aralığı: Her 1 saatte bir
+  workflow_dispatch: # Actions tabından manuel test imkanı
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Health Endpoint
+        run: |
+          echo "Pinging Railway Server Health Endpoint..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" https://musteri-hizmetleri-ai-production-f980.up.railway.app/health)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Health check passed! Server is up and running."
+            exit 0
+          else
+            echo "❌ Health check failed with status $HTTP_STATUS"
+            echo "Server may be down or crashing!"
+            exit 1
+          fi

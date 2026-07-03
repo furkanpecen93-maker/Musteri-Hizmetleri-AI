@@ -28,6 +28,9 @@ app.get('/katalog', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
 
+// Health check endpoint for monitoring (GitHub Actions)
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', time: new Date().toISOString() }));
+
 // ══════════════════════════════════════════════
 // 1. META WEBHOOK VERIFICATION (GET)
 // Instagram + Messenger aynı endpoint'i kullanır
