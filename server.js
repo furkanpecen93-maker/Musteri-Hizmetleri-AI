@@ -21,8 +21,9 @@ app.use(express.text({
   type: '*/*'
 }));
 
+const path = require('path');
 // Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/katalog', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
