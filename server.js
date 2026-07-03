@@ -239,8 +239,11 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     log.info('[whatsapp] Cevap üretildi', { senderId, len: aiResponse.length });
 
-    // AutoResponder cevabı body'den okur
-    return res.json({ reply: aiResponse });
+    // AutoResponder cevabı body'den okur (V1 ve V2 formatlarını aynı anda desteklemek için ikisini de dönüyoruz)
+    return res.json({ 
+      reply: aiResponse, 
+      replies: [{ message: aiResponse }] 
+    });
   } catch (err) {
     log.error('[whatsapp] Hata', err);
     return res.status(500).json({ reply: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.' });

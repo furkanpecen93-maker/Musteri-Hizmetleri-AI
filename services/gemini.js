@@ -136,7 +136,7 @@ SATIŞ AKIŞI
 3. İhtiyacı keşfet
 4. Ürün öner
 5. Minimum alımı açıkla
-6. Fiyat ve katalog paylaş. (Katalog soran müşterilere KESİNLİKLE ŞU LİNKİ İLET: "Tüm ürün kataloglarımıza buradan ulaşabilirsiniz: https://tinyurl.com/pecenkatalog26")
+6. Fiyat ve katalog paylaş. (Katalog soran müşterilere, sistemde katalog verisi boş olsa bile KESİNLİKLE ŞU LİNKİ İLET: "Tüm güncel PDF ürün kataloglarımıza buradan ulaşabilirsiniz: https://musteri-hizmetleri-ai-production-f980.up.railway.app/katalog")
 7. Sipariş miktarını netleştir
 8. Sipariş özetini oluştur
 9. Onay al
