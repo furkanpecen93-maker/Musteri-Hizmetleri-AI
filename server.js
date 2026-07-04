@@ -171,6 +171,12 @@ async function processMessage(senderId, initialMessage, platform) {
       if (aiResponseObj.stateUpdates) {
         updateState(senderId, aiResponseObj.stateUpdates);
       }
+      
+      // KESİN ÇÖZÜM (Foolproof check): Eğer yapay zeka JSON'da true yapmayı unutursa metinden yakala
+      const lowerResp = aiResponse.toLowerCase();
+      if (lowerResp.includes('nerede') || lowerResp.includes('hangi platform')) {
+        updateState(senderId, { hasAskedLocation: true });
+      }
 
       // AI cevabını kaydet
       addMessage(senderId, 'assistant', aiResponse);
