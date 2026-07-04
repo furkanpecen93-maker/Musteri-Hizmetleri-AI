@@ -21,19 +21,32 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
   // Gemini API formatına çevir
   const contents = [];
   
-  // Conversation history
-  for (const msg of conversationHistory.slice(-10)) { // Son 10 mesaj
-    contents.push({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    });
+  // Yeni mesaj server.js tarafında generateResponse çağrılmadan hemen önce eklendiği için history'de mevcut.
+  // Gemini API 'user' ve 'model' rollerinin ardışık olmasını zorunlu kılar.
+  const historyToUse = conversationHistory.slice(-15);
+  let lastRole = null;
+  let currentTextParts = [];
+
+  for (const msg of historyToUse) {
+    const role = msg.role === 'assistant' ? 'model' : 'user';
+    if (role === lastRole) {
+      currentTextParts.push(msg.content);
+    } else {
+      if (lastRole !== null) {
+        contents.push({ role: lastRole, parts: [{ text: currentTextParts.join('\n') }] });
+      }
+      lastRole = role;
+      currentTextParts = [msg.content];
+    }
   }
-  
-  // Yeni mesaj
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }]
-  });
+  if (lastRole !== null) {
+    contents.push({ role: lastRole, parts: [{ text: currentTextParts.join('\n') }] });
+  }
+
+  // Fallback
+  if (contents.length === 0) {
+    contents.push({ role: 'user', parts: [{ text: userMessage }] });
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel}:generateContent?key=${config.geminiApiKey}`;
   
