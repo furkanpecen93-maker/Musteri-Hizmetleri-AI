@@ -23,7 +23,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
   
   // Yeni mesaj server.js tarafında generateResponse çağrılmadan hemen önce eklendiği için history'de mevcut.
   // Gemini API 'user' ve 'model' rollerinin ardışık olmasını zorunlu kılar.
-  const historyToUse = conversationHistory.slice(-15);
+  const historyToUse = conversationHistory.slice(-20);
   let lastRole = null;
   let currentTextParts = [];
 
