@@ -7,7 +7,15 @@ const log = require('./utils/logger');
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
-const { addMessage, getHistory, isDuplicate } = require('./services/memory');
+const { addMessage, getHistory, isDuplicate, getState, updateState } = require('./services/memory');
+
+function triggerAudit(senderId) {
+  const history = getHistory(senderId);
+  if (history.length >= 4 && history.length % 4 === 0) {
+    const { auditConversation } = require('./services/auditor');
+    auditConversation(senderId, history).catch(err => log.error('[audit] Hata', err));
+  }
+}
 
 const app = express();
 
@@ -156,10 +164,17 @@ async function processMessage(senderId, initialMessage, platform) {
       ]);
 
       // AI cevap üret
-      const aiResponse = await generateResponse(combinedMessage, history, catalog);
+      const currentState = getState(senderId);
+      const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
+      const aiResponse = aiResponseObj.text;
+      
+      if (aiResponseObj.stateUpdates) {
+        updateState(senderId, aiResponseObj.stateUpdates);
+      }
 
       // AI cevabını kaydet
       addMessage(senderId, 'assistant', aiResponse);
+      triggerAudit(senderId);
 
       // Platforma göre gönder
       if (platform === 'instagram') {
@@ -263,13 +278,18 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       addMessage(senderId, 'user', combinedMsg);
+      const currentState = getState(senderId);
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
       ]);
-      const resp = await generateResponse(combinedMsg, history, catalog);
-      addMessage(senderId, 'assistant', resp);
-      return resp;
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      if (respObj.stateUpdates) {
+        updateState(senderId, respObj.stateUpdates);
+      }
+      addMessage(senderId, 'assistant', respObj.text);
+      triggerAudit(senderId);
+      return respObj.text;
     });
 
     if (aiResponse === null) {
@@ -330,13 +350,18 @@ app.post('/webhook/manychat', async (req, res) => {
     // Mesajı kuyruğa al veya işle
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       addMessage(senderId, 'user', combinedMsg);
+      const currentState = getState(senderId);
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
       ]);
-      const resp = await generateResponse(combinedMsg, history, catalog);
-      addMessage(senderId, 'assistant', resp);
-      return resp;
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      if (respObj.stateUpdates) {
+        updateState(senderId, respObj.stateUpdates);
+      }
+      addMessage(senderId, 'assistant', respObj.text);
+      triggerAudit(senderId);
+      return respObj.text;
     });
 
     if (aiResponse === null) {
@@ -437,13 +462,18 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       addMessage(senderId, 'user', combinedMsg);
+      const currentState = getState(senderId);
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
       ]);
-      const resp = await generateResponse(combinedMsg, history, catalog);
-      addMessage(senderId, 'assistant', resp);
-      return resp;
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      if (respObj.stateUpdates) {
+        updateState(senderId, respObj.stateUpdates);
+      }
+      addMessage(senderId, 'assistant', respObj.text);
+      triggerAudit(senderId);
+      return respObj.text;
     });
 
     if (aiResponse === null) {

@@ -10,19 +10,17 @@ const log = require('../utils/logger');
  * @param {Object} catalogData - Ürün kataloğu verisi
  * @returns {string} AI cevabı
  */
-async function generateResponse(userMessage, conversationHistory = [], catalogData = null) {
+async function generateResponse(userMessage, conversationHistory = [], catalogData = null, userState = {}) {
   if (!config.geminiApiKey) {
     log.error('[gemini] GEMINI_API_KEY tanımlı değil!');
-    return 'Şu an teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar deneyin.';
+    return { text: 'Şu an teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar deneyin.', stateUpdates: {} };
   }
 
-  const systemPrompt = buildSystemPrompt(catalogData);
+  const systemPrompt = buildSystemPrompt(catalogData, userState);
   
   // Gemini API formatına çevir
   const contents = [];
   
-  // Yeni mesaj server.js tarafında generateResponse çağrılmadan hemen önce eklendiği için history'de mevcut.
-  // Gemini API 'user' ve 'model' rollerinin ardışık olmasını zorunlu kılar.
   const historyToUse = conversationHistory.slice(-20);
   let lastRole = null;
   let currentTextParts = [];
@@ -44,7 +42,6 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     contents.push({ role: lastRole, parts: [{ text: currentTextParts.join('\n') }] });
   }
 
-  // Fallback
   if (contents.length === 0) {
     const content = (userMessage || '').trim() || '[Boş mesaj]';
     contents.push({ role: 'user', parts: [{ text: content }] });
@@ -60,7 +57,8 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 1024,
-      topP: 0.9
+      topP: 0.9,
+      responseMimeType: "application/json"
     },
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -83,13 +81,12 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
       });
       
       if (response.ok) {
-        break; // Başarılı
+        break; 
       }
       
       lastErrorText = await response.text();
       log.warn(`[gemini] API hatası: ${response.status}. Kalan deneme: ${retries - 1}`, lastErrorText);
       
-      // 400 Bad Request genellikle payload hatasıdır, tekrar denemek çözmez ama yine de şans veriyoruz
       if (response.status === 400) {
          break;
       }
@@ -100,13 +97,13 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     
     retries--;
     if (retries > 0) {
-      await new Promise(r => setTimeout(r, 2000)); // 2 saniye bekle ve tekrar dene
+      await new Promise(r => setTimeout(r, 2000));
     }
   }
 
   if (!response || !response.ok) {
     log.error(`[gemini] Tüm denemeler başarısız. Son Hata:`, lastErrorText);
-    return 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.';
+    return { text: 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
   }
 
   try {
@@ -115,21 +112,36 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     
     if (!aiText) {
       log.warn('[gemini] Boş cevap döndü', data);
-      return 'Mesajınızı aldım, size en kısa sürede dönüş yapacağız.';
+      return { text: 'Mesajınızı aldım, size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
     }
 
-    log.info('[gemini] Cevap üretildi', { len: aiText.length });
-    return aiText.trim();
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(aiText);
+    } catch (e) {
+      log.error('[gemini] API json dönmedi', aiText);
+      return { text: aiText, stateUpdates: {} }; // Fallback to raw text if parsing fails somehow
+    }
+
+    log.info('[gemini] JSON Cevap üretildi', { musteri_analizi: parsedResponse.musteri_analizi });
+    
+    return {
+      text: (parsedResponse.bot_cevabi || '...').trim(),
+      stateUpdates: {
+        hasAskedLocation: parsedResponse.musteri_analizi?.satis_yeri_soruldu_mu === true,
+        profile: parsedResponse.musteri_analizi
+      }
+    };
   } catch (err) {
     log.error('[gemini] JSON Parse hatası', err);
-    return 'Teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar mesaj atın.';
+    return { text: 'Teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar mesaj atın.', stateUpdates: {} };
   }
 }
 
 /**
  * Satıcı kişiliği + katalog bilgisi ile system prompt oluştur
  */
-function buildSystemPrompt(catalogData) {
+function buildSystemPrompt(catalogData, userState = {}) {
   let catalogSection = '';
   
   if (catalogData && catalogData.length > 0) {
@@ -139,14 +151,39 @@ function buildSystemPrompt(catalogData) {
     }
   }
 
-  return `# 1. KİMLİK: KİBAR, NAZİK VE YARDIMSEVER ESNAF
+  let locationRule = '';
+  if (!userState.hasAskedLocation) {
+    locationRule = `
+- İlk Giriş ve Toptancı Kontrolü: Müşteri sohbete İLK DEFA "Merhaba", "Bilgi alabilir miyim?" gibi bir giriş yaparsa onu "Merhaba, hoş geldiniz 😊" diyerek karşıla ve YALNIZCA BİR KERE "Satışlarınızı nerede yapıyorsunuz acaba?" diye sor.
+- Tekrar Yasağı (ÇOK KRİTİK KURAL): "Satışlarınızı nerede yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
+  }
+
+  let auditRule = '';
+  if (userState.auditFeedback) {
+    auditRule = `\n\n# MÜFETTİŞİN SANA GİZLİ TAVSİYESİ (ÇOK ÖNEMLİ)\nSatış müdürümüz önceki mesajlarını okudu ve sana şu talimatı veriyor: "${userState.auditFeedback}". Bir sonraki cevabını KESİNLİKLE bu tavsiyeye uygun şekilde şekillendir!`;
+  }
+
+  return `# 0. YANIT FORMATI (ZORUNLU JSON)
+Bana KESİNLİKLE sadece aşağıdaki JSON formatında cevap vereceksin. Mesajın tamamı geçerli bir JSON objesi olmalıdır. Başka hiçbir metin veya markdown (örneğin \`\`\`json) ekleme.
+
+{
+  "bot_cevabi": "Müşteriye yazılacak doğal ve samimi cevap metni buraya gelecek.",
+  "musteri_analizi": {
+    "satis_yeri_soruldu_mu": true, // Eğer bu mesajda veya geçmiş mesajlarda "Satışlarınızı nerede yapıyorsunuz?" sorusu sorulduysa veya müşteri nerede satış yaptığını söylediyse bunu true yap.
+    "ilgi_seviyesi": 8, // 1 ile 10 arası puan
+    "butce_tahmini": "Bilinmiyor", // Düşük/Orta/Yüksek/Bilinmiyor
+    "kategori_ilgisi": ["Kloş Etek"], // İlgilendiği ürünler
+    "satis_potansiyeli": "Ilık", // Soğuk/Ilık/Sıcak
+    "kisa_not": "Müşteri hakkında tek cümlelik analiz"
+  }
+}${auditRule}
+
+# 1. KİMLİK: KİBAR, NAZİK VE YARDIMSEVER ESNAF
 Sen Peçen Toptan İmalat'ın tecrübeli, iş bitirici ama aynı zamanda DAİMA NAZİK, yumuşak dilli ve güler yüzlü bir toptan satış esnafısın.
 Kurumsal robotlar gibi destan yazmazsın, kısa ve net cevaplar verirsin AMA bunu asla sert veya kaba bir tonda yapmazsın. Ciddiyetini kaybetmeden, daima kibar ve sıcakkanlı bir üslup kullan. Söylemlerini yumuşat ve ara sıra, abartmadan samimi emojiler kullan (😊, 🙏, 👍 gibi). Müşteri ters veya kaba bir cevap verse bile sen asla sinirlenmez, ona nazikçe yardımcı olmaya çalışırsın.
 
 # 2. İLK KARŞILAMA, GİRİŞ VE SİPARİŞ DURUMU
-- Direkt Sipariş İsteyenler: Eğer müşteri doğrudan "Sipariş vermek istiyorum", "Şiparişi oluşturmak istiyorum" gibi bir ifade kullanırsa, onu ASLA "Hoş geldiniz, satışları nerede yapıyorsunuz?" diye oyalama! Doğrudan sipariş aşamasına (Siparişi Devretme kuralına) geçip işlemi yetkiliye devret.
-- İlk Giriş ve Toptancı Kontrolü: Müşteri sohbete İLK DEFA "Merhaba", "Bilgi alabilir miyim?" gibi bir giriş yaparsa onu "Merhaba, hoş geldiniz 😊" diyerek karşıla ve YALNIZCA BİR KERE "Satışlarınızı nerede yapıyorsunuz acaba?" diye sor.
-- Tekrar Yasağı (ÇOK KRİTİK KURAL): "Satışlarınızı nerede yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.
+- Direkt Sipariş İsteyenler: Eğer müşteri doğrudan "Sipariş vermek istiyorum", "Şiparişi oluşturmak istiyorum" gibi bir ifade kullanırsa, onu ASLA "Hoş geldiniz, satışları nerede yapıyorsunuz?" diye oyalama! Doğrudan sipariş aşamasına (Siparişi Devretme kuralına) geçip işlemi yetkiliye devret.${locationRule}
 - Kaba ve Ters Müşteriler (KRİTİK): Müşteri "Sanane", "Sana ne", "İşim olmaz" gibi kaba, ters veya huysuz bir cevap verirse onunla ASLA diyaloğa girme ve SAKIN "Nasıl yardımcı olabilirim" deme. Onu sinirlendirmemek için konuyu direkt insana devret: "Estağfurullah, yanlış anlamayın. Konuyu hemen yetkili arkadaşıma iletiyorum, size yardımcı olacaklar." diyerek devret.
 
 # 3. KONUŞMA DİLİ VE BAĞLAM (KRİTİK KURAL)
@@ -192,7 +229,7 @@ Müşteri ürünleri görmek ister veya katalog sorarsa uzatmadan doğrudan şu 
 Emin olmadığın bir bilgi sorulduğunda uydurmak yerine direkt şunu söyle:
 "İlgili ekip arkadaşlarıma bu konuyu ilettim. En kısa sürede sizleri bilgilendirecekler."
 ${catalogSection}
-ÖNEMLİ NOT: Sen bir chat botusun ve doğrudan müşteriye yanıt üretiyorsun. Raporlama formatlarını veya kendi iç analizini ASLA müşteriye göndereceğin mesaj metninin içine yazma. Sadece müşteriye söyleyeceğin doğal ve samimi metni üret.`;
+ÖNEMLİ NOT: Sen bir chat botusun ve doğrudan müşteriye yanıt üretiyorsun. Raporlama formatlarını veya kendi iç analizini "bot_cevabi" içine KESİNLİKLE YAZMA. "bot_cevabi" sadece müşteriye söyleyeceğin doğal ve samimi metni içermelidir.`;
 }
 
 module.exports = { generateResponse };

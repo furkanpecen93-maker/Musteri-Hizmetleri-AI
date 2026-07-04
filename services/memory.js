@@ -3,8 +3,27 @@ const log = require('../utils/logger');
 
 // In-memory store — {senderId: [{role, content, timestamp}]}
 const conversations = new Map();
+const userStates = new Map(); // Store state per user (e.g. hasAskedLocation, profile)
 const MAX_HISTORY = 20; // Son 20 mesaj tutulur
 const CONVERSATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat
+
+/**
+ * Kullanıcı state'ini getir
+ */
+function getState(senderId) {
+  if (!userStates.has(senderId)) {
+    userStates.set(senderId, { hasAskedLocation: false, profile: {} });
+  }
+  return userStates.get(senderId);
+}
+
+/**
+ * Kullanıcı state'ini güncelle
+ */
+function updateState(senderId, updates) {
+  const currentState = getState(senderId);
+  Object.assign(currentState, updates);
+}
 
 /**
  * Konuşma geçmişine mesaj ekle
@@ -83,4 +102,4 @@ function cleanup() {
 // Her 1 saatte temizlik yap
 setInterval(cleanup, 60 * 60 * 1000);
 
-module.exports = { addMessage, getHistory, isDuplicate };
+module.exports = { addMessage, getHistory, isDuplicate, getState, updateState };
