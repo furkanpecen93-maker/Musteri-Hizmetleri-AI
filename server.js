@@ -179,6 +179,42 @@ async function processMessage(senderId, initialMessage, platform) {
   }
 }
 
+/**
+ * Senkron (HTTP Response bekleyen) Webhook'lar için Burst Coalesce (WhatsApp / ManyChat)
+ */
+async function processSyncWebhook(senderId, initialMessage, handler) {
+  const existingLock = processingLock.get(senderId);
+  if (existingLock) {
+    existingLock.queue.push(initialMessage);
+    log.info(`[sync-webhook] Burst kuyruğa eklendi`, { senderId, queueLen: existingLock.queue.length });
+    return null; // Null dönüyoruz ki çağıran HTTP endpoint boş 200 OK dönsün
+  }
+
+  const lockEntry = { queue: [] };
+  processingLock.set(senderId, lockEntry);
+
+  try {
+    let pending = [initialMessage];
+    
+    // Peş peşe gelen mesajları toplamak için 3 saniye bekle
+    await sleep(3000); 
+
+    if (lockEntry.queue.length > 0) {
+      pending = pending.concat(lockEntry.queue.splice(0));
+    }
+
+    const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
+    if (pending.length > 1) {
+      log.info(`[sync-webhook] ${pending.length} mesaj birleştirildi`, { senderId });
+    }
+
+    return await handler(combinedMessage);
+  } finally {
+    processingLock.delete(senderId);
+  }
+}
+
+
 // ══════════════════════════════════════════════
 // 3. WHATSAPP AUTORESPONDER WEBHOOK
 // Android AutoResponder uygulaması buraya POST atar
@@ -222,23 +258,24 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     // Duplicate kontrolü
     if (isDuplicate(senderId, messageText)) {
-      return res.json({ reply: '' });
+      return res.json({ reply: '', replies: [] });
     }
 
-    // Mesajı kaydet
-    addMessage(senderId, 'user', messageText);
+    const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
+      addMessage(senderId, 'user', combinedMsg);
+      const [catalog, history] = await Promise.all([
+        getCatalog(),
+        Promise.resolve(getHistory(senderId))
+      ]);
+      const resp = await generateResponse(combinedMsg, history, catalog);
+      addMessage(senderId, 'assistant', resp);
+      return resp;
+    });
 
-    // Katalog ve geçmişi al
-    const [catalog, history] = await Promise.all([
-      getCatalog(),
-      Promise.resolve(getHistory(senderId))
-    ]);
-
-    // AI cevap üret
-    const aiResponse = await generateResponse(messageText, history, catalog);
-
-    // Cevabı kaydet
-    addMessage(senderId, 'assistant', aiResponse);
+    if (aiResponse === null) {
+      // Mesaj birleştirildi, bu HTTP isteğine sessizce 200 dön
+      return res.json({ reply: '', replies: [] });
+    }
 
     log.info('[whatsapp] Cevap üretildi', { senderId, len: aiResponse.length });
 
@@ -290,20 +327,24 @@ app.post('/webhook/manychat', async (req, res) => {
       });
     }
 
-    // Mesajı kaydet
-    addMessage(senderId, 'user', messageText);
+    // Mesajı kuyruğa al veya işle
+    const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
+      addMessage(senderId, 'user', combinedMsg);
+      const [catalog, history] = await Promise.all([
+        getCatalog(),
+        Promise.resolve(getHistory(senderId))
+      ]);
+      const resp = await generateResponse(combinedMsg, history, catalog);
+      addMessage(senderId, 'assistant', resp);
+      return resp;
+    });
 
-    // Katalog ve geçmişi al
-    const [catalog, history] = await Promise.all([
-      getCatalog(),
-      Promise.resolve(getHistory(senderId))
-    ]);
-
-    // AI cevap üret
-    const aiResponse = await generateResponse(messageText, history, catalog);
-
-    // Cevabı kaydet
-    addMessage(senderId, 'assistant', aiResponse);
+    if (aiResponse === null) {
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages: [] }
+      });
+    }
 
     log.info('[manychat] Cevap üretildi', { senderId, len: aiResponse.length });
 
@@ -394,16 +435,21 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       return res.send(''); 
     }
 
-    addMessage(senderId, 'user', messageText);
+    const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
+      addMessage(senderId, 'user', combinedMsg);
+      const [catalog, history] = await Promise.all([
+        getCatalog(),
+        Promise.resolve(getHistory(senderId))
+      ]);
+      const resp = await generateResponse(combinedMsg, history, catalog);
+      addMessage(senderId, 'assistant', resp);
+      return resp;
+    });
 
-    const [catalog, history] = await Promise.all([
-      getCatalog(),
-      Promise.resolve(getHistory(senderId))
-    ]);
-
-    const aiResponse = await generateResponse(messageText, history, catalog);
-
-    addMessage(senderId, 'assistant', aiResponse);
+    if (aiResponse === null) {
+       res.set('Content-Type', 'application/json; charset=utf-8');
+       return res.json({ replies: [] });
+    }
 
     log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
 
