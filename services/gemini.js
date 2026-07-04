@@ -119,8 +119,14 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     try {
       parsedResponse = JSON.parse(aiText);
     } catch (e) {
-      log.error('[gemini] API json dönmedi', aiText);
-      return { text: aiText, stateUpdates: {} }; // Fallback to raw text if parsing fails somehow
+      log.error('[gemini] API json dönmedi, regex ile kurtarma deneniyor', aiText);
+      let fallbackText = 'Sistemde anlık bir yoğunluk var, size nasıl yardımcı olabilirim?';
+      // Regex ile sadece metni çekmeye çalış
+      const match = aiText.match(/"bot_cevabi"\s*:\s*"([^"]+)/);
+      if (match && match[1]) {
+        fallbackText = match[1];
+      }
+      return { text: fallbackText, stateUpdates: {} }; 
     }
 
     log.info('[gemini] JSON Cevap üretildi', { musteri_analizi: parsedResponse.musteri_analizi });
