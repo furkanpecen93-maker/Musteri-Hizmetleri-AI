@@ -102,4 +102,27 @@ function cleanup() {
 // Her 1 saatte temizlik yap
 setInterval(cleanup, 60 * 60 * 1000);
 
-module.exports = { addMessage, getHistory, isDuplicate, getState, updateState };
+/**
+ * Mesajın standart bir karşılama/reklam mesajı olup olmadığını kontrol et
+ */
+function isGenericGreeting(messageText) {
+  if (!messageText) return false;
+  const txt = messageText.toLowerCase().trim();
+  
+  // Direkt eşleşmeler
+  const exactMatches = ['merhaba', 'merhabalar', 'selam', 'selamlar', 'iyi günler', 'kolay gelsin', 'nasılsınız', 'slm'];
+  if (exactMatches.includes(txt)) return true;
+  
+  // İçeren ifadeler (reklamdan gelenler vb.)
+  const keywords = ['bilgi alabilir miyim', 'reklam hakkında', 'daha fazla bilgi', 'yardımcı olur musunuz'];
+  if (keywords.some(k => txt.includes(k)) && txt.length < 80) {
+    // İçinde özel bir soru (fiyat, beden vb.) yoksa genel karşılama kabul et
+    if (!txt.includes('fiyat') && !txt.includes('ne kadar') && !txt.includes('beden')) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting };

@@ -2,6 +2,7 @@
 const fetch = require('node-fetch');
 const { config } = require('../config/env');
 const log = require('../utils/logger');
+const { isGenericGreeting } = require('./memory');
 
 /**
  * Gemini AI'a mesaj gönder ve cevap al
@@ -11,6 +12,19 @@ const log = require('../utils/logger');
  * @returns {string} AI cevabı
  */
 async function generateResponse(userMessage, conversationHistory = [], catalogData = null, userState = {}) {
+  // -------------------------------------------------------------
+  // 🚀 HİBRİT MİMARİ KESİCİSİ (INTERCEPTOR) - SIFIR RİSK
+  // Eğer kullanıcı ilk defa yazıyorsa ve mesajı klasik bir greeting ise,
+  // yapay zekaya ASLA gitme, doğrudan sabit kodlanmış cevabı dön.
+  // -------------------------------------------------------------
+  if (!userState.hasAskedLocation && isGenericGreeting(userMessage)) {
+    log.info('[gemini] Hibrit Mimari Kesicisi Devreye Girdi (AI Bypass)', { userMessage });
+    return {
+      text: "Merhaba hoş geldiniz 😊 Biz toptan kadın giyim imalatçısıyız. Satışlarınızı nerede yapıyorsunuz acaba?",
+      stateUpdates: { hasAskedLocation: true }
+    };
+  }
+
   if (!config.geminiApiKey) {
     log.error('[gemini] GEMINI_API_KEY tanımlı değil!');
     return { text: 'Şu an teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar deneyin.', stateUpdates: {} };
@@ -161,7 +175,7 @@ function buildSystemPrompt(catalogData, userState = {}) {
   let locationRule = '';
   if (!userState.hasAskedLocation) {
     locationRule = `
-- Meta Reklamları ve İlk Giriş Kontrolü: Müşteri sohbete İLK DEFA "Merhaba", "Bilgi alabilir miyim?", "Reklam hakkında bilgi alabilir miyim?" veya "Daha fazla bilgi verir misiniz?" gibi reklamdan geldiğini belli eden hazır metinlerle giriş yaparsa; ona ASLA robotik bir teşekkür mesajı atma. Direkt şu çok doğal, esnaf ağzı karşılama metnini kullan: "Merhaba hoş geldiniz 😊 Biz toptan kadın giyim imalatçısıyız. Satışlarınızı nerede yapıyorsunuz acaba?" (Sadece bu cümleyi kur, uzatma!)
+- Toptancı Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa ve direkt spesifik bir soru sormuşsa (örn: "Etek fiyatı nedir?"), sorusuna kısa ve net cevap ver ve cümlenin SONUNA YALNIZCA BİR KERE "Sizlere daha iyi yardımcı olabilmek adına, toptan alımlarınız için satışlarınızı nerede yapıyorsunuz acaba?" sorusunu ekle.
 - Tekrar Yasağı (ÇOK KRİTİK KURAL): "Satışlarınızı nerede yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
   }
 
