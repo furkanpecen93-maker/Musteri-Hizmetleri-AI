@@ -29,14 +29,15 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
   for (const msg of historyToUse) {
     const role = msg.role === 'assistant' ? 'model' : 'user';
+    const content = (msg.content || '').trim() || '[Boş mesaj]';
     if (role === lastRole) {
-      currentTextParts.push(msg.content);
+      currentTextParts.push(content);
     } else {
       if (lastRole !== null) {
         contents.push({ role: lastRole, parts: [{ text: currentTextParts.join('\n') }] });
       }
       lastRole = role;
-      currentTextParts = [msg.content];
+      currentTextParts = [content];
     }
   }
   if (lastRole !== null) {
@@ -45,40 +46,70 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
   // Fallback
   if (contents.length === 0) {
-    contents.push({ role: 'user', parts: [{ text: userMessage }] });
+    const content = (userMessage || '').trim() || '[Boş mesaj]';
+    contents.push({ role: 'user', parts: [{ text: content }] });
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel}:generateContent?key=${config.geminiApiKey}`;
   
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-          topP: 0.9
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-        ]
-      })
-    });
+  const payload = {
+    system_instruction: {
+      parts: [{ text: systemPrompt }]
+    },
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+      topP: 0.9
+    },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+    ]
+  };
 
-    if (!response.ok) {
-      const errText = await response.text();
-      log.error(`[gemini] API hatası: ${response.status}`, errText);
-      return 'Üzgünüm, şu an cevap oluşturamıyorum. Lütfen biraz sonra tekrar deneyin.';
+  let retries = 3;
+  let lastErrorText = '';
+  let response = null;
+
+  while (retries > 0) {
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        break; // Başarılı
+      }
+      
+      lastErrorText = await response.text();
+      log.warn(`[gemini] API hatası: ${response.status}. Kalan deneme: ${retries - 1}`, lastErrorText);
+      
+      // 400 Bad Request genellikle payload hatasıdır, tekrar denemek çözmez ama yine de şans veriyoruz
+      if (response.status === 400) {
+         break;
+      }
+    } catch (err) {
+      lastErrorText = err.message;
+      log.warn(`[gemini] İstek hatası. Kalan deneme: ${retries - 1}`, err);
     }
+    
+    retries--;
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, 2000)); // 2 saniye bekle ve tekrar dene
+    }
+  }
 
+  if (!response || !response.ok) {
+    log.error(`[gemini] Tüm denemeler başarısız. Son Hata:`, lastErrorText);
+    return 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.';
+  }
+
+  try {
     const data = await response.json();
     const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     
@@ -90,7 +121,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     log.info('[gemini] Cevap üretildi', { len: aiText.length });
     return aiText.trim();
   } catch (err) {
-    log.error('[gemini] İstek hatası', err);
+    log.error('[gemini] JSON Parse hatası', err);
     return 'Teknik bir sorun yaşıyoruz. Lütfen biraz sonra tekrar mesaj atın.';
   }
 }
