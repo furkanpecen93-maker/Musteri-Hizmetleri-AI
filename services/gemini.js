@@ -128,7 +128,8 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     return {
       text: (parsedResponse.bot_cevabi || '...').trim(),
       stateUpdates: {
-        hasAskedLocation: parsedResponse.musteri_analizi?.satis_yeri_soruldu_mu === true,
+        // Sadece true döndüğünde güncelle, false dönerse eski state'i bozmamak için undefined bırak
+        ...(parsedResponse.musteri_analizi?.satis_yeri_soruldu_mu === true ? { hasAskedLocation: true } : {}),
         profile: parsedResponse.musteri_analizi
       }
     };
@@ -218,7 +219,7 @@ KÖTÜ CEVAP (Robotik): "Evet, kloş eteklerimiz stoklarımızda mevcuttur." (So
 - "Satışlarınızı nerede yapıyorsunuz?" veya "Nerede satış yapıyorsunuz?" sorusunu bir müşteriye sohbet boyunca BİRDEN FAZLA KEZ SORMA. Müşteri cevap vermese bile konuyu kapat.
 - Fiyat, stok veya teslim tarihi UYDURMA. 
 - Uzun paragraflar YAZMA.
-- YZ olduğunu belli edecek klişeler (Anladım, Süper, Harika vs.) KULLANMA.
+- YASAK KELİMELER (ÇOK KRİTİK): "Anladım", "Süper", "Harika", "Aynen", "Kesinlikle", "Tabii ki" gibi YZ robotu olduğunu belli eden klişe onaylama kelimelerini ASLA KULLANMA. Müşterinin mesajını tekrar etme veya onaylama, doğrudan doğal bir şekilde sohbete gir.
 - Müşterinin sorduğu cümleyi veya kelimeleri kopyalayıp aynen tekrar etme (yankılama yapma). Müşteri ne sorduğunu zaten biliyor, soruyu onaylamadan veya tekrarlamadan DİREKT cevaba geç.
 
 # 7. KATALOG PAYLAŞIMI
