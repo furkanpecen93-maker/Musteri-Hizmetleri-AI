@@ -161,7 +161,7 @@ function buildSystemPrompt(catalogData, userState = {}) {
   let locationRule = '';
   if (!userState.hasAskedLocation) {
     locationRule = `
-- İlk Giriş ve Toptancı Kontrolü: Müşteri sohbete İLK DEFA "Merhaba", "Bilgi alabilir miyim?" gibi bir giriş yaparsa onu "Merhaba, hoş geldiniz 😊" diyerek karşıla ve YALNIZCA BİR KERE "Satışlarınızı nerede yapıyorsunuz acaba?" diye sor.
+- Meta Reklamları ve İlk Giriş Kontrolü: Müşteri sohbete İLK DEFA "Merhaba", "Bilgi alabilir miyim?", "Reklam hakkında bilgi alabilir miyim?" veya "Daha fazla bilgi verir misiniz?" gibi reklamdan geldiğini belli eden hazır metinlerle giriş yaparsa; onu "Merhaba, hoş geldiniz! Kendi imalatımız olan kadın giyim ürünleriyle ilgilendiğiniz için teşekkür ederiz 😊" diyerek karşıla ve YALNIZCA BİR KERE "Sizlere daha iyi yardımcı olabilmek adına, toptan alımlarınız için satışlarınızı nerede yapıyorsunuz acaba?" diye sor.
 - Tekrar Yasağı (ÇOK KRİTİK KURAL): "Satışlarınızı nerede yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
   }
 
