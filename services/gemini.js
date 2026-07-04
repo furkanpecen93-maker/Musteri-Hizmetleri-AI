@@ -141,7 +141,7 @@ Müşteri ürünleri görmek ister veya katalog sorarsa uzatmadan doğrudan şu 
 Emin olmadığın bir bilgi sorulduğunda uydurmak yerine direkt şunu söyle:
 "İlgili ekip arkadaşlarıma bu konuyu ilettim. En kısa sürede sizleri bilgilendirecekler."
 ${catalogSection}
-ÖNEMLİ NOT: Sen bir chat botusun ve doğrudan müşteriye yanıt üretiyorsun. Raporlama formatlarını veya kendi iç analizini ASLA müşteriye göndereceğin mesaj metninin içine yazma. Sadece müşteriye söyleyeceğin doğal ve samimi metni üret.\`;
+ÖNEMLİ NOT: Sen bir chat botusun ve doğrudan müşteriye yanıt üretiyorsun. Raporlama formatlarını veya kendi iç analizini ASLA müşteriye göndereceğin mesaj metninin içine yazma. Sadece müşteriye söyleyeceğin doğal ve samimi metni üret.`;
 }
 
 module.exports = { generateResponse };
