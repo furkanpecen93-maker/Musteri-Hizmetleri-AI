@@ -151,7 +151,7 @@ async function processMessage(senderId, initialMessage, platform) {
         log.info(`[process] ${pending.length} mesaj birleştirildi`, { senderId });
       }
 
-      if (combinedMessage.trim().toUpperCase() === 'SIFIRLA') {
+      if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
         clearHistory(senderId);
         const wipeMsg = 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.';
         if (platform === 'instagram') {
@@ -237,7 +237,7 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
       log.info(`[sync-webhook] ${pending.length} mesaj birleştirildi`, { senderId });
     }
 
-    if (combinedMessage.trim().toUpperCase() === 'SIFIRLA') {
+    if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
       clearHistory(senderId);
       return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
     }

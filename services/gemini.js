@@ -248,22 +248,24 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
     // Eğer AI hala inatla JSON objesi üretirse (veya eksik JSON üretirse), 
 
-    // sadece "bot_cevabi" değerini bulmaya çalış (fallback regex)
+    // içinde kaçış yapılmamış (unescaped) tırnak olabileceğini hesaba katarak güvenli bir ayıklama yapıyoruz:
 
-    const botCevapMatch = finalCevap.match(/"bot_cevabi"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+    
+    const botCevabiMatch1 = finalCevap.match(/"bot_cevabi"\s*:\s*"(.*?)",?\s*"\w+"\s*:/is);
+    const botCevabiMatch2 = finalCevap.match(/"bot_cevabi"\s*:\s*"(.*?)"?\s*\}/is);
+    const botCevabiMatch3 = finalCevap.match(/"bot_cevabi"\s*:\s*"(.*)/is);
 
-    if (botCevapMatch && botCevapMatch[1]) {
-
-      finalCevap = botCevapMatch[1];
-
+    if (botCevabiMatch1 && botCevabiMatch1[1]) {
+      finalCevap = botCevabiMatch1[1];
+    } else if (botCevabiMatch2 && botCevabiMatch2[1]) {
+      finalCevap = botCevabiMatch2[1];
+    } else if (botCevabiMatch3 && botCevabiMatch3[1]) {
+      finalCevap = botCevabiMatch3[1];
+      // Sondaki " veya "} kalıntılarını temizle
+      finalCevap = finalCevap.replace(/"?\s*\}?\s*$/g, '');
     } else {
-
-      // Eğer JSON gibi davranıp " ile başladıysa ve sonrasında , veya "musteri_analizi" geldiyse,
-
-      // ilk çift tırnak arasındaki cümleyi al.
-
-      const firstQuoteMatch = finalCevap.match(/^"([^"\\]*(?:\\.[^"\\]*)*)"/);
-
+      // Eğer JSON gibi davranıp " ile başladıysa ve sonrasında musteri_analizi geldiyse,
+      const firstQuoteMatch = finalCevap.match(/^"(.*?)",?\s*"\w+"\s*:/is);
       if (firstQuoteMatch && firstQuoteMatch[1] && finalCevap.includes('musteri_analizi')) {
 
         finalCevap = firstQuoteMatch[1];
