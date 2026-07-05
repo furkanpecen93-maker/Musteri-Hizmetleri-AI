@@ -142,8 +142,11 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
     log.info('[gemini] JSON Cevap üretildi', { musteri_analizi: parsedResponse.musteri_analizi });
     
+    let finalCevap = parsedResponse?.bot_cevabi || parsedResponse?.botCevabi || '...';
+    if (typeof finalCevap !== 'string') finalCevap = JSON.stringify(finalCevap);
+
     return {
-      text: (parsedResponse.bot_cevabi || '...').trim(),
+      text: finalCevap.trim(),
       stateUpdates: {
         // Sadece true döndüğünde güncelle, false dönerse eski state'i bozmamak için undefined bırak
         ...(parsedResponse.musteri_analizi?.satis_yeri_soruldu_mu === true ? { hasAskedLocation: true } : {}),
