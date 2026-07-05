@@ -10,11 +10,8 @@ const { getCatalog } = require('./services/catalog');
 const { addMessage, getHistory, isDuplicate, getState, updateState } = require('./services/memory');
 
 function triggerAudit(senderId) {
-  const history = getHistory(senderId);
-  if (history.length >= 4 && history.length % 4 === 0) {
-    const { auditConversation } = require('./services/auditor');
-    auditConversation(senderId, history).catch(err => log.error('[audit] Hata', err));
-  }
+  // Teftiş botu (Auditor), mesajların yarım gitmesine sebep olabileceği şüphesiyle kullanıcı talebi üzerine iptal edilmiştir.
+  return;
 }
 
 const app = express();
