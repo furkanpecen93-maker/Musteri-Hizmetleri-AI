@@ -217,8 +217,8 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
   try {
     let pending = [initialMessage];
     
-    // Peş peşe gelen mesajları toplamak için 3 saniye bekle
-    await sleep(3000); 
+    // Peş peşe gelen mesajları toplamak için 5 saniye bekle
+    await sleep(5000); 
 
     if (lockEntry.queue.length > 0) {
       pending = pending.concat(lockEntry.queue.splice(0));

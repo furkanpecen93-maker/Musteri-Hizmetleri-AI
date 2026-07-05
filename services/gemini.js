@@ -131,14 +131,21 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(aiText);
+      // Olası markdown etiketlerini temizle
+      let cleanText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsedResponse = JSON.parse(cleanText);
     } catch (e) {
       log.error('[gemini] API json dönmedi, regex ile kurtarma deneniyor', aiText);
       let fallbackText = 'Sistemde anlık bir yoğunluk var, size nasıl yardımcı olabilirim?';
-      // Regex ile sadece metni çekmeye çalış
-      const match = aiText.match(/"bot_cevabi"\s*:\s*"([^"]+)/);
+      // Daha güvenli regex (newline veya tırnak içeriyorsa bozulmasını engeller)
+      const match = aiText.match(/"bot_cevabi"\s*:\s*"([\s\S]*?)"\s*,/);
       if (match && match[1]) {
-        fallbackText = match[1];
+        fallbackText = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      } else {
+        const matchOld = aiText.match(/"bot_cevabi"\s*:\s*"([^"]+)/);
+        if (matchOld && matchOld[1]) {
+          fallbackText = matchOld[1];
+        }
       }
       return { text: fallbackText, stateUpdates: {} }; 
     }
