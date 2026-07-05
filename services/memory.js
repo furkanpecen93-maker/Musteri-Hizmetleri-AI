@@ -116,4 +116,10 @@ function isGenericGreeting(messageText) {
   return false;
 }
 
-module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting };
+function clearHistory(senderId) {
+  conversations.delete(senderId);
+  userStates.delete(senderId);
+  log.info(`[memory] ${senderId} icin gecmis ve state temizlendi.`);
+}
+
+module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting, clearHistory };

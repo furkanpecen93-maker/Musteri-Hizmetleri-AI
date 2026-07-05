@@ -7,7 +7,7 @@ const log = require('./utils/logger');
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
-const { addMessage, getHistory, isDuplicate, getState, updateState } = require('./services/memory');
+const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory } = require('./services/memory');
 
 function triggerAudit(senderId) {
   // Teftiş botu (Auditor), mesajların yarım gitmesine sebep olabileceği şüphesiyle kullanıcı talebi üzerine iptal edilmiştir.
@@ -151,6 +151,17 @@ async function processMessage(senderId, initialMessage, platform) {
         log.info(`[process] ${pending.length} mesaj birleştirildi`, { senderId });
       }
 
+      if (combinedMessage.trim().toUpperCase() === 'SIFIRLA') {
+        clearHistory(senderId);
+        const wipeMsg = 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.';
+        if (platform === 'instagram') {
+          await sendInstagramMessage(senderId, wipeMsg);
+        } else {
+          await sendMessengerMessage(senderId, wipeMsg);
+        }
+        break;
+      }
+
       // Kullanıcı mesajını kaydet
       addMessage(senderId, 'user', combinedMessage);
 
@@ -224,6 +235,11 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
     const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
     if (pending.length > 1) {
       log.info(`[sync-webhook] ${pending.length} mesaj birleştirildi`, { senderId });
+    }
+
+    if (combinedMessage.trim().toUpperCase() === 'SIFIRLA') {
+      clearHistory(senderId);
+      return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
     }
 
     return await handler(combinedMessage);
