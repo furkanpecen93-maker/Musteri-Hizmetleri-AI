@@ -172,7 +172,7 @@ function buildSystemPrompt(catalogData, userState = {}) {
   let locationRule = '';
   if (!userState.hasAskedLocation) {
     locationRule = `
-- İlk Karşılama ve Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa (sadece selam verse bile), onu çok sıcak ve samimi bir esnaf ağzıyla karşıla (örn: "Merhabalar, Peçen Toptan Giyim'e hoş geldiniz 😊") ve BİR KEREYE MAHSUS cümlenin sonuna şu soruyu ekle: "Nerede satış yapıyorsunuz acaba?"
+- İlk Karşılama ve Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa (sadece selam verse bile), onu çok sıcak ve samimi bir esnaf ağzıyla karşıla (örn: "Merhabalar, Peçen Toptan İmalat'a hoş geldiniz 😊") ve BİR KEREYE MAHSUS cümlenin sonuna şu soruyu ekle: "Nerede satış yapıyorsunuz acaba?"
 - Tekrar Yasağı (ÇOK KRİTİK KURAL): "Nerede satış yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
   }
 
