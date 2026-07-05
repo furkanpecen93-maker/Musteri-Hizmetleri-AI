@@ -12,18 +12,8 @@ const { isGenericGreeting } = require('./memory');
  * @returns {string} AI cevabı
  */
 async function generateResponse(userMessage, conversationHistory = [], catalogData = null, userState = {}) {
-  // -------------------------------------------------------------
-  // 🚀 HİBRİT MİMARİ KESİCİSİ (INTERCEPTOR) - SIFIR RİSK
-  // Eğer kullanıcı ilk defa yazıyorsa ve mesajı klasik bir greeting ise,
-  // yapay zekaya ASLA gitme, doğrudan sabit kodlanmış cevabı dön.
-  // -------------------------------------------------------------
-  if (!userState.hasAskedLocation && isGenericGreeting(userMessage)) {
-    log.info('[gemini] Hibrit Mimari Kesicisi Devreye Girdi (AI Bypass)', { userMessage });
-    return {
-      text: "Merhaba hoş geldiniz 😊 Biz toptan kadın giyim imalatçısıyız. Satışlarınızı nerede yapıyorsunuz acaba?",
-      stateUpdates: { hasAskedLocation: true }
-    };
-  }
+  // AI Bypass (Sıfır Risk Kesicisi) tamamen kaldırıldı. 
+  // Artık ilk karşılama doğrudan Gemini tarafından "Esnaf" ağzıyla doğal olarak yapılacak.
 
   if (!config.geminiApiKey) {
     log.error('[gemini] GEMINI_API_KEY tanımlı değil!');
@@ -182,8 +172,8 @@ function buildSystemPrompt(catalogData, userState = {}) {
   let locationRule = '';
   if (!userState.hasAskedLocation) {
     locationRule = `
-- Toptancı Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa ve direkt spesifik bir soru sormuşsa (örn: "Etek fiyatı nedir?"), sorusuna kısa ve net cevap ver ve cümlenin SONUNA YALNIZCA BİR KERE "Sizlere daha iyi yardımcı olabilmek adına, toptan alımlarınız için satışlarınızı nerede yapıyorsunuz acaba?" sorusunu ekle.
-- Tekrar Yasağı (ÇOK KRİTİK KURAL): "Satışlarınızı nerede yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
+- İlk Karşılama ve Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa (sadece selam verse bile), onu çok sıcak ve samimi bir esnaf ağzıyla karşıla (örn: "Merhabalar, Peçen Toptan Giyim'e hoş geldiniz 😊") ve BİR KEREYE MAHSUS cümlenin sonuna şu soruyu ekle: "Nerede satış yapıyorsunuz acaba?"
+- Tekrar Yasağı (ÇOK KRİTİK KURAL): "Nerede satış yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
   }
 
   let auditRule = '';
