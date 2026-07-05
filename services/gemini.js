@@ -238,15 +238,43 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
 
 
-    // Art─▒k JSON kullanm─▒yoruz, LLM'den gelen metni do─şrudan cevap olarak kabul ediyoruz.
+    // Artık JSON kullanmıyoruz, LLM'den gelen metni doğrudan cevap olarak kabul ediyoruz.
 
-    // Olas─▒ markdown, t─▒rnak veya gereksiz bo┼şluklar─▒ temizle
+    // Olası markdown, tırnak veya gereksiz boşlukları temizle
 
     let finalCevap = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     
 
-    // G├╝venlik: E─şer bot cevab─▒ t─▒rnak i├ğine al─▒nm─▒┼şsa t─▒rnaklar─▒ temizle
+    // Eğer AI hala inatla JSON objesi üretirse (veya eksik JSON üretirse), 
+
+    // sadece "bot_cevabi" değerini bulmaya çalış (fallback regex)
+
+    const botCevapMatch = finalCevap.match(/"bot_cevabi"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+
+    if (botCevapMatch && botCevapMatch[1]) {
+
+      finalCevap = botCevapMatch[1];
+
+    } else {
+
+      // Eğer JSON gibi davranıp " ile başladıysa ve sonrasında , veya "musteri_analizi" geldiyse,
+
+      // ilk çift tırnak arasındaki cümleyi al.
+
+      const firstQuoteMatch = finalCevap.match(/^"([^"\\]*(?:\\.[^"\\]*)*)"/);
+
+      if (firstQuoteMatch && firstQuoteMatch[1] && finalCevap.includes('musteri_analizi')) {
+
+        finalCevap = firstQuoteMatch[1];
+
+      }
+
+    }
+
+
+
+    // Güvenlik: Eğer bot cevabı tam tırnak içine alınmışsa tırnakları temizle
 
     if (finalCevap.startsWith('"') && finalCevap.endsWith('"')) {
 
