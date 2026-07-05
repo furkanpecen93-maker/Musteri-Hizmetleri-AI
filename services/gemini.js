@@ -125,19 +125,19 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
       let cleanText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
       parsedResponse = JSON.parse(cleanText);
     } catch (e) {
-      log.error('[gemini] API json dönmedi, regex ile kurtarma deneniyor', aiText);
-      let fallbackText = 'Sistemde anlık bir yoğunluk var, size nasıl yardımcı olabilirim?';
-      // Daha güvenli regex (newline veya tırnak içeriyorsa bozulmasını engeller)
-      const match = aiText.match(/"bot_cevabi"\s*:\s*"([\s\S]*?)"\s*,/);
-      if (match && match[1]) {
-        fallbackText = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      log.error('[gemini] API json dönmedi, kurtarma deneniyor', aiText);
+      let botResponse = 'Sistemde anlık bir yoğunluk var, size nasıl yardımcı olabilirim?';
+      
+      if (cleanText.includes('"bot_cevabi"')) {
+        let text = cleanText.substring(cleanText.indexOf('"bot_cevabi"'));
+        text = text.replace(/"bot_cevabi"\s*:\s*"/i, '');
+        text = text.replace(/"\s*\}\s*$/i, '');
+        text = text.replace(/\\"/g, "'").replace(/\\n/g, '\n');
+        botResponse = text.trim();
       } else {
-        const matchOld = aiText.match(/"bot_cevabi"\s*:\s*"([^"]+)/);
-        if (matchOld && matchOld[1]) {
-          fallbackText = matchOld[1];
-        }
+        botResponse = cleanText.replace(/\{|\}|"bot_cevabi":|"/g, '').trim();
       }
-      return { text: fallbackText, stateUpdates: {} }; 
+      return { text: botResponse, stateUpdates: {} }; 
     }
 
     log.info('[gemini] JSON Cevap üretildi', { musteri_analizi: parsedResponse.musteri_analizi });
@@ -244,7 +244,7 @@ KÖTÜ CEVAP (Robotik): 'Evet, kloş eteklerimiz stoklarımızda mevcuttur.' (So
 - UYDURMA YASAĞI (ÇOK KRİTİK): "İş ortaklarımıza özel çözümlerimiz var", "Bölgenize özel kampanyamız var" gibi BİZİM KURAL LİSTEMİZDE OLMAYAN kurumsal, abartılı, sahte hiçbir vaatte veya söylemde BULUNMA. Sen bir AVM mağazası veya plaza şirketi değilsin, bir TOPTAN İMALATÇI ESNAFSIN. Gerçek dışı hiçbir bilgi verme.
 - Fiyat, stok veya teslim tarihi UYDURMA. 
 - Uzun paragraflar YAZMA.
-- YASAK KELİMELER (ÇOK KRİTİK): 'Anladım', 'Süper', 'Harika', 'Aynen', 'Kesinlikle', 'Tabii ki' gibi YZ robotu olduğunu belli eden klişe onaylama kelimelerini ASLA KULLANMA. Müşterinin mesajını tekrar etme veya onaylama, doğrudan doğal bir şekilde sohbete gir.
+- YASAK KELİMELER (ÇOK KRİTİK): 'Anladım', 'Anlıyorum', 'Peki', 'Tamamdır', 'Süper', 'Harika', 'Aynen', 'Kesinlikle', 'Tabii ki' gibi YZ robotu olduğunu belli eden klişe onaylama kelimelerini ASLA KULLANMA. Müşterinin mesajını tekrar etme veya onaylama, doğrudan doğal bir şekilde sohbete gir.
 - Müşterinin sorduğu cümleyi veya kelimeleri kopyalayıp aynen tekrar etme (yankılama yapma). Müşteri ne sorduğunu zaten biliyor, soruyu onaylamadan veya tekrarlamadan DİREKT cevaba geç.
 
 # 7. KATALOG PAYLAŞIMI
