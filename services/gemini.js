@@ -229,12 +229,11 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     
 
     if (!aiText) {
-
-      log.warn('[gemini] Bo┼ş cevap d├Ând├╝', data);
-
-      return { text: 'Mesaj─▒n─▒z─▒ ald─▒m, size en k─▒sa s├╝rede d├Ân├╝┼ş yapaca─ş─▒z.', stateUpdates: {} };
-
+      log.warn('[gemini] Boş cevap döndü', data);
+      return { text: 'Mesajınızı aldım, size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
     }
+
+    log.info('[gemini] RAW AI RESPONSE:', { aiText });
 
 
 
