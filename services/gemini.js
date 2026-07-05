@@ -119,10 +119,10 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
       return { text: 'Mesajınızı aldım, size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
     }
 
+    // Olası markdown etiketlerini temizle
+    const cleanText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
     let parsedResponse;
     try {
-      // Olası markdown etiketlerini temizle
-      let cleanText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
       parsedResponse = JSON.parse(cleanText);
     } catch (e) {
       log.error('[gemini] API json dönmedi, kurtarma deneniyor', aiText);
