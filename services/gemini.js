@@ -3,12 +3,13 @@ const fetch = require('node-fetch');
 const { config } = require('../config/env');
 const log = require('../utils/logger');
 const { isGenericGreeting } = require('./memory');
+const { searchProducts } = require('./catalog');
 
 /**
  * Gemini AI'a mesaj gönder ve cevap al
  * @param {string} userMessage - Müşterinin mesajı
  * @param {Array} conversationHistory - Önceki mesajlar [{role, content}]
- * @param {Object} catalogData - Ürün kataloğu verisi
+ * @param {Object} catalogData - Ürün kataloğu verisi (ARTIK KULLANILMIYOR, DİNAMİK)
  * @returns {string} AI cevabı
  */
 async function generateResponse(userMessage, conversationHistory = [], catalogData = null, userState = {}) {
@@ -53,11 +54,29 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel}:generateContent?key=${config.geminiApiKey}`;
   
+  const tools = [{
+    functionDeclarations: [{
+      name: "urun_sorgula",
+      description: "Katalogdaki ürünleri arar ve detaylarını (fiyat, beden, renk, kumaş vb.) döndürür. Müşteri fiyat, stok, beden veya belirli bir ürün detayı sorduğunda KESİNLİKLE bu aracı kullanın.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          query: {
+            type: "STRING",
+            description: "Aranacak ürünün kodu (örn: 23-B1) veya ürün adı (örn: palazzo, fırfırlı elbise vb.)"
+          }
+        },
+        required: ["query"]
+      }
+    }]
+  }];
+
   const payload = {
     system_instruction: {
       parts: [{ text: systemPrompt }]
     },
     contents,
+    tools,
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 1024,
@@ -71,46 +90,84 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     ]
   };
 
-  let retries = 3;
-  let lastErrorText = '';
-  let response = null;
+  async function makeGeminiRequest(currentPayload) {
+    let retries = 3;
+    let lastErrorText = '';
+    let response = null;
 
-  while (retries > 0) {
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (response.ok) {
-        break; 
+    while (retries > 0) {
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentPayload)
+        });
+        
+        if (response.ok) {
+          break; 
+        }
+        
+        lastErrorText = await response.text();
+        log.warn(`[gemini] API hatası: ${response.status}. Kalan deneme: ${retries - 1}`, lastErrorText);
+        
+        if (response.status === 400) {
+           break;
+        }
+      } catch (err) {
+        lastErrorText = err.message;
+        log.warn(`[gemini] İstek hatası. Kalan deneme: ${retries - 1}`, err);
       }
       
-      lastErrorText = await response.text();
-      log.warn(`[gemini] API hatası: ${response.status}. Kalan deneme: ${retries - 1}`, lastErrorText);
-      
-      if (response.status === 400) {
-         break;
+      retries--;
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 2000));
       }
-    } catch (err) {
-      lastErrorText = err.message;
-      log.warn(`[gemini] İstek hatası. Kalan deneme: ${retries - 1}`, err);
     }
-    
-    retries--;
-    if (retries > 0) {
-      await new Promise(r => setTimeout(r, 2000));
+
+    if (!response || !response.ok) {
+      log.error(`[gemini] Tüm denemeler başarısız. Son Hata:`, lastErrorText);
+      return null;
     }
+    return await response.json();
   }
 
-  if (!response || !response.ok) {
-    log.error(`[gemini] Tüm denemeler başarısız. Son Hata:`, lastErrorText);
+  let data = await makeGeminiRequest(payload);
+  if (!data) {
     return { text: 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
   }
 
+  // Fonksiyon Çağrısı Kontrolü
+  let functionCall = data?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+  if (functionCall && functionCall.name === "urun_sorgula") {
+    log.info(`[gemini] FUNCTION CALL TETİKLENDİ: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
+    const query = functionCall.args.query;
+    const results = searchProducts(query);
+    
+    // Modelin ilk fonksiyon çağrısını içeriğe ekle
+    payload.contents.push(data.candidates[0].content);
+    
+    // Bizim vereceğimiz cevabı functionResponse olarak ekle
+    payload.contents.push({
+      role: 'function',
+      parts: [{
+        functionResponse: {
+          name: "urun_sorgula",
+          response: { 
+            name: "urun_sorgula",
+            content: results.length > 0 ? results : { "hata": "Bu isimde/kodda bir ürün bulunamadı. Müşteriye stokta olmadığını veya kodun yanlış olduğunu kibarca belirtin." }
+          }
+        }
+      }]
+    });
+    
+    // İkinci kez API'ye istek at
+    data = await makeGeminiRequest(payload);
+    if (!data) {
+      return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {} };
+    }
+  }
+
   try {
-    const data = await response.json();
     const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!aiText) {

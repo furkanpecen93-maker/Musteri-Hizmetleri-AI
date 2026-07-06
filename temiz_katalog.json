@@ -1,0 +1,749 @@
+[
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B1",
+    "urun_adi": "A Kesi̇m Uzun Kol Elbi̇se",
+    "fiyat_tl": "450",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Mdl İnterlok",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B2",
+    "urun_adi": "Kisa Kollu Ayarlanabi̇len Büzgülü Elbi̇se",
+    "fiyat_tl": "400",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Mdl İnterlok",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B3",
+    "urun_adi": "Firfir Detayli Mi̇ni̇ Gece Elbi̇sesi̇",
+    "fiyat_tl": "400",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Mdl İnterlok",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B4",
+    "urun_adi": "Firfir Detayli Mi̇ni̇ Gece Elbi̇sesi̇",
+    "fiyat_tl": "400",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Mdl İnterlok",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B5",
+    "urun_adi": "Mi̇ni̇ Si̇yah Gece Elbi̇sesi̇",
+    "fiyat_tl": "390",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Mdl İnterlok",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B6",
+    "urun_adi": "Si̇mli̇ Mi̇ni̇ Gece Elbi̇sesi̇",
+    "fiyat_tl": "350",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Örme Si̇mli̇ Buzyy",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B7",
+    "urun_adi": "Ferace- Bağlamali Namaz Elbi̇sesi̇",
+    "fiyat_tl": "220",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "70 Denye",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "elbise-2026",
+    "urun_kodu": "23-B8",
+    "urun_adi": "Şalli Tek Parça Namaz Elbi̇sesi̇-Hi̇jap",
+    "fiyat_tl": "240",
+    "bedenler": "S-M-L-XL",
+    "kumas": "70 Denye",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-200",
+    "urun_adi": "Nervürlü Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "180",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "2 Iplik",
+    "renk": "Gri-Menaj"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-201",
+    "urun_adi": "Nervürlü Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "180",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "2 Iplik",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-202",
+    "urun_adi": "Nervürlü Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "180",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "2 Iplik",
+    "renk": "Lacivert"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-203",
+    "urun_adi": "Nervürlü Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "180",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "2 Iplik",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-204",
+    "urun_adi": "Kargo Cepli̇ Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "190",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Jarse",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-205",
+    "urun_adi": "Kargo Cepli̇ Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "190",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Jarse",
+    "renk": "Gri̇-Menaj"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-206",
+    "urun_adi": "Kargo Cepli̇ Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "190",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Jarse",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-207",
+    "urun_adi": "Kargo Cepli̇ Palazzo Oversi̇ze Kesi̇m Eşofman Alti",
+    "fiyat_tl": "190",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Jarse",
+    "renk": "Lacivert"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-208",
+    "urun_adi": "Yüksek Bel Geni̇ş Kesi̇m Palazzo Pantolon",
+    "fiyat_tl": "195",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Bürümcük",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-209",
+    "urun_adi": "Yüksek Bel Geni̇ş Kesi̇m Palazzo Pantolon",
+    "fiyat_tl": "195",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Bürümcük",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-210",
+    "urun_adi": "Leopar Desen Yüksek Bel Geni̇ş Kesi̇m Palazzo Pantolon",
+    "fiyat_tl": "195",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Bürümcük",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "esofman-pantolon-2026",
+    "urun_kodu": "P-211",
+    "urun_adi": "Leopar Desen Yüksek Bel Li̇krali Pantolon",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Bürümcük",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A1",
+    "urun_adi": "A Kesi̇m Kloş Etek",
+    "fiyat_tl": "230",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl 220Gr",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A2",
+    "urun_adi": "A Kesi̇m Kloş Etek",
+    "fiyat_tl": "230",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl 220Gr",
+    "renk": "Kahverengi̇"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A3",
+    "urun_adi": "A Kesi̇m Kloş Etek",
+    "fiyat_tl": "230",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl 220Gr",
+    "renk": "Antrasi̇t"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A4",
+    "urun_adi": "A Kesi̇m Kloş Etek",
+    "fiyat_tl": "230",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl 220Gr",
+    "renk": "Ekru"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A5",
+    "urun_adi": "Si̇yah Yüksek Bel Kalem Etek Uzun",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl220Gr",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A6",
+    "urun_adi": "Leopar Desenli̇ Kloş Etek Leopar Baskili",
+    "fiyat_tl": "250",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl220Gr",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A7",
+    "urun_adi": "Mi̇di̇ Boy Yüksek Bel A Kesi̇m Etek",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Scuba Puf Mdl 200Gr",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A8",
+    "urun_adi": "Uzun Etek Astari",
+    "fiyat_tl": "80",
+    "bedenler": "S-M-L-XL",
+    "kumas": "70 Denye",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A9",
+    "urun_adi": "Uzun Etek Astari",
+    "fiyat_tl": "80",
+    "bedenler": "S-M-L-XL",
+    "kumas": "70 Denye",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A10",
+    "urun_adi": "Uzun Etek Astari",
+    "fiyat_tl": "80",
+    "bedenler": "S-M-L-XL",
+    "kumas": "70 Denye",
+    "renk": "Ekru"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A11",
+    "urun_adi": "Şort Etek",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mi̇kro Sprm 180Gr",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A12",
+    "urun_adi": "Şort Etek",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mi̇kro Sprm 180Gr",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A13",
+    "urun_adi": "Yüksek Bel Li̇krali Mi̇ni̇ Etek",
+    "fiyat_tl": "90",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Dlg 220Gr",
+    "renk": "Si̇yah"
+  },
+  {
+    "katalog": "etek-2026",
+    "urun_kodu": "23-A14",
+    "urun_adi": "Yüksek Bel Li̇krali Mi̇ni̇ Etek",
+    "fiyat_tl": "90",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Li̇krali Dlg 220Gr",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-300",
+    "urun_adi": "Kayikçi Yaka Dekolteli̇ Basi̇c Crop Bluz",
+    "fiyat_tl": "95",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-301",
+    "urun_adi": "Kayikçi Yaka Dekolteli̇ Basi̇c Crop Bluz",
+    "fiyat_tl": "95",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-302",
+    "urun_adi": "Leopar Desen Kayikçi Yaka Dekolteli̇ Basi̇c Crop Bluz",
+    "fiyat_tl": "95",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-303",
+    "urun_adi": "Geni̇ş Yaka Keten Görünümlü Oversi̇ze T-Shi̇rt",
+    "fiyat_tl": "135",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-304",
+    "urun_adi": "Geni̇ş Yaka Keten Görünümlü Oversi̇ze T-Shi̇rt",
+    "fiyat_tl": "135",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-305",
+    "urun_adi": "Leopar Desen Geni̇ş Yaka Keten Görünümlü Oversi̇ze T-Shi̇rt",
+    "fiyat_tl": "135",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro",
+    "renk": "Leopar"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-111",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-112",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-113",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-114",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-115",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-116",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-117",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-118",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-119",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-120",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-121",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "kadin-ust-2026",
+    "urun_kodu": "P-122",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "",
+    "urun_adi": "P-100",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "",
+    "urun_adi": "P-101",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "",
+    "urun_adi": "P-102",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "",
+    "urun_adi": "P-103",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-104",
+    "urun_adi": "Spor Tayt",
+    "fiyat_tl": "160",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-105",
+    "urun_adi": "Spor Tayt",
+    "fiyat_tl": "160",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-106",
+    "urun_adi": "Spor Tayt",
+    "fiyat_tl": "160",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-107",
+    "urun_adi": "İspanyol Paça Tayt",
+    "fiyat_tl": "180",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-108",
+    "urun_adi": "Sikilaştirici Tayt",
+    "fiyat_tl": "190",
+    "bedenler": "2XL-3XL-4XL-5XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-109",
+    "urun_adi": "Yüksek Bel Sikilaştirici Tayt",
+    "fiyat_tl": "200",
+    "bedenler": "2XL-3XL-4XL-5XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-110A",
+    "urun_adi": "Etekli̇ Şort",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro Sprm",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-110B",
+    "urun_adi": "Etekli̇ Şort",
+    "fiyat_tl": "170",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Mikro Sprm",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-111",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-112",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-113",
+    "urun_adi": "Sporcu Crop T-Shi̇rt",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-114",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-115",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-116",
+    "urun_adi": "Detayli Crop",
+    "fiyat_tl": "105",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-117",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-118",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-119",
+    "urun_adi": "Halter Yaka Crop",
+    "fiyat_tl": "120",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-120",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-121",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-122",
+    "urun_adi": "Çapraz Crop",
+    "fiyat_tl": "110",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-123",
+    "urun_adi": "Spor Alt-Üst Takim",
+    "fiyat_tl": "270",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-124",
+    "urun_adi": "Spor Alt-Üst Takim",
+    "fiyat_tl": "270",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-125",
+    "urun_adi": "Spor Alt-Üst Takim",
+    "fiyat_tl": "270",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Kahverengi"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-126",
+    "urun_adi": "Spor Bi̇yeli̇ Alt-Üst Takim",
+    "fiyat_tl": "290",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Siyah"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-127",
+    "urun_adi": "Spor Bi̇yeli̇ Alt-Üst Takim",
+    "fiyat_tl": "290",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas": "Likralı Dlg",
+    "renk": "Antrasit"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-128",
+    "urun_adi": "Spor Çorap Lesawear Logolu",
+    "fiyat_tl": "220",
+    "bedenler": "STANDART",
+    "kumas": "Pamuklu",
+    "renk": "Beyaz"
+  },
+  {
+    "katalog": "spor-2026",
+    "urun_kodu": "P-129",
+    "urun_adi": "Spor Çorap Çemberli̇",
+    "fiyat_tl": "180",
+    "bedenler": "STANDART",
+    "kumas": "Pamuklu",
+    "renk": "Beyaz"
+  }
+]
