@@ -154,7 +154,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
           name: "urun_sorgula",
           response: { 
             name: "urun_sorgula",
-            content: results.length > 0 ? results : { "hata": "Bu isimde/kodda bir ürün bulunamadı. Müşteriye stokta olmadığını veya kodun yanlış olduğunu kibarca belirtin." }
+            content: results.length > 0 ? results : { "hata": "Bu isimde/kodda bir ürün bulunamadı. Müşteriye kibarca stokta olmadığını belirtin ve yardımcı olmaları için KESİNLİKLE insan temsilcilere yönlendirmeyi teklif edin. (Örn: 'İsterseniz detaylı yardımcı olmaları için sizi ekip arkadaşlarıma yönlendireyim. [DEVRET]')" }
           }
         }
       }]
