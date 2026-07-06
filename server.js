@@ -14,9 +14,9 @@ function triggerAudit(senderId) {
   return;
 }
 
-const GREETING_MESSAGE = `Merhabalar, Peçen Tekstil’e hoş geldiniz.
+const GREETING_MESSAGE = `Merhabalar, Peçen Toptan İmalat'a hoş geldiniz.
 
-Peçen Tekstil olarak 22 yılı aşkın süredir kadın giyim alanında üretim yapan köklü bir imalat firmasıyız. Kadın spor giyim, gündelik giyim ve iç giyim koleksiyonlarımızla güncel moda trendlerini kaliteli üretim ve doğru fiyat anlayışıyla bir araya getiriyoruz.
+Peçen Toptan İmalat olarak 22 yılı aşkın süredir kadın giyim alanında üretim yapan köklü bir imalat firmasıyız. Kadın spor giyim, gündelik giyim ve iç giyim koleksiyonlarımızla güncel moda trendlerini kaliteli üretim ve doğru fiyat anlayışıyla bir araya getiriyoruz.
 
 Toptan ihtiyaçlarınız için size en uygun ürünleri sunmaktan memnuniyet duyarız.
 
