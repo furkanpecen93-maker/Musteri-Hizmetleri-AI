@@ -8,6 +8,33 @@ const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
 const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory } = require('./services/memory');
+const fetch = require('node-fetch');
+
+// Telegram Bildirim Ayarları
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8904842068:AAEXgPjzxibJ20vr3xoCu9NjgLG_xUmuU8c';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '1222016405';
+
+function sendTelegramNotification(customerNumber, customerMessage) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const text = `🚨 DİKKAT: Bir müşteri ekibe devredildi!\n\n📱 Müşteri/Numara: ${customerNumber}\n💬 Son Mesajı: "${customerMessage}"`;
+  
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text })
+  }).catch(err => log.error('[telegram] Bildirim hatası:', err.message));
+}
+
+function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
+  const devretRegex = /[\[\(]DEVRET[\]\)]|[\[\(]SİPARİŞ[\]\)]|[\[\(]SIPARIS[\]\)]/gi;
+  if (devretRegex.test(aiResponseText)) {
+    // Notify telegram
+    sendTelegramNotification(senderId, userMessage);
+    // Remove the tag
+    return aiResponseText.replace(devretRegex, '').trim();
+  }
+  return aiResponseText;
+}
 
 function triggerAudit(senderId) {
   // Teftiş botu (Auditor), mesajların yarım gitmesine sebep olabileceği şüphesiyle kullanıcı talebi üzerine iptal edilmiştir.
@@ -182,7 +209,7 @@ async function processMessage(senderId, initialMessage, platform) {
       // AI cevap üret
       const currentState = getState(senderId);
       const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
-      const aiResponse = aiResponseObj.text;
+      const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
 
       if (aiResponseObj.stateUpdates) {
         updateState(senderId, aiResponseObj.stateUpdates);
