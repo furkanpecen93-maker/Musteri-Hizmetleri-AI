@@ -507,8 +507,12 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
 
     // AutoResponder expects a JSON response with a "replies" array
+    const replies = Array.isArray(aiResponse) ? aiResponse.map(msg => ({ message: msg })) : [{ message: aiResponse }];
     res.set('Content-Type', 'application/json; charset=utf-8');
-    return res.json({ replies: [{ message: aiResponse }] });
+    return res.json({ 
+      reply: Array.isArray(aiResponse) ? aiResponse[0] : aiResponse,
+      replies: replies 
+    });
   } catch (err) {
     log.error('[autoresponder] Hata', err);
     res.set('Content-Type', 'application/json; charset=utf-8');
