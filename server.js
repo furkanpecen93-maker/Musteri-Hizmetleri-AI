@@ -339,12 +339,13 @@ app.post('/webhook/whatsapp', async (req, res) => {
         Promise.resolve(getHistory(senderId))
       ]);
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
         updateState(senderId, respObj.stateUpdates);
       }
-      addMessage(senderId, 'assistant', respObj.text);
+      addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return respObj.text;
+      return aiResponseText;
     });
 
     if (aiResponse === null) {
@@ -411,12 +412,13 @@ app.post('/webhook/manychat', async (req, res) => {
         Promise.resolve(getHistory(senderId))
       ]);
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
         updateState(senderId, respObj.stateUpdates);
       }
-      addMessage(senderId, 'assistant', respObj.text);
+      addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return respObj.text;
+      return aiResponseText;
     });
 
     if (aiResponse === null) {
