@@ -157,7 +157,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 }
 
 /**
- * Satıcı kişiliği + katalog bilgisi ile system prompt oluştur
+ * Müşteri hizmetleri + katalog bilgisi ile system prompt oluştur
  */
 function buildSystemPrompt(catalogData, userState = {}) {
   let catalogSection = '';
@@ -169,22 +169,11 @@ function buildSystemPrompt(catalogData, userState = {}) {
     }
   }
 
-  let locationRule = '';
-  if (!userState.hasAskedLocation) {
-    locationRule = `
-- İlk Karşılama ve Lokasyon Kontrolü: Müşteri sohbete ilk defa yazıyorsa (sadece selam verse bile), onu çok sıcak ve samimi bir esnaf ağzıyla karşıla (örn: "Merhabalar, Peçen Toptan İmalat'a hoş geldiniz 😊") ve BİR KEREYE MAHSUS cümlenin sonuna şu soruyu ekle: "Nerede satış yapıyorsunuz acaba?". BUNUN DIŞINDA BİLGİ VERME VEYA KATALOG ATMA, CEVABI BEKLE.
-- Tekrar Yasağı (ÇOK KRİTİK KURAL): "Nerede satış yapıyorsunuz acaba?" sorusunu tüm sohbet boyunca SADECE VE SADECE 1 KEZ sorabilirsin. Müşteri bu soruya cevap vermese bile, konuyu değiştirse bile, sohbetin ilerleyen kısımlarında bu soruyu ASLA TEKRAR SORMA! Her cümlenin sonuna nokta koyar gibi bu soruyu ekleme, bu kesinlikle YASAKTIR. Sadece bir kere sor, cevap vermezse konuyu uzatma ve müşterinin girdiği konudan devam et.`;
-  }
+  return `Sen bir müşteri hizmetleri asistanısın. Müşteriye doğrudan, sade ve metin (text) formatında yanıt ver. JSON veya XML kullanma. Sadece müşteriye iletilecek cevabı yaz.
 
-  let auditRule = '';
-  if (userState.auditFeedback) {
-    auditRule = `\n\n# MÜFETTİŞİN SANA GİZLİ TAVSİYESİ (ÇOK ÖNEMLİ)\nSatış müdürümüz önceki mesajlarını okudu ve sana şu talimatı veriyor: "${userState.auditFeedback}". Bir sonraki cevabını KESİNLİKLE bu tavsiyeye uygun şekilde şekillendir!`;
-  }
-
-  return `# 0. YANIT FORMATI
-Bana KESİNLİKLE düz metin olarak cevap vereceksin. Hiçbir şekilde JSON, XML veya benzeri bir format KULLANMA. Doğrudan müşteriye gidecek mesajı yaz.
-- BİRİNCİ KURAL (ÇOK KRİTİK): ASLA JSON FORMATI KULLANMA. Müşteriye söyleyeceğin cevabı doğrudan DÜZ METİN olarak yaz. Herhangi bir kod bloğu, anahtar kelime, "bot_cevabi" vb. ASLA KULLANMA.
-- İKİNCİ KURAL: "tahmini_bütçe", "kısa_not" gibi hayali raporlar veya notlar KESİNLİKLE YAZMA. Sadece gerçek bir esnaf gibi müşteriye cevap ver.`;
+ÖNEMLİ KURAL:
+Eğer müşteri fiyat sorarsa, ürünlerle alakalı soru sorarsa veya bedenleriyle alakalı soru sorarsa; onlara kibar ve düzgün bir ifade ile yaklaşarak KESİNLİKLE şu cümleyi kurmalısın: "Sorduğunuz soruların cevabı kataloğumuzda mevcuttur efendim." (Ardından gerekirse kataloğa yönlendir).
+${catalogSection}`;
 }
 
 module.exports = { generateResponse };

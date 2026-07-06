@@ -79,7 +79,7 @@ app.post('/webhook', async (req, res) => {
         return res.status(400).send('Invalid JSON');
       }
     }
-    
+
     if (body.object !== 'page' && body.object !== 'instagram') {
       log.warn('[webhook] Bilinmeyen object tipi', { object: body.object });
       return;
@@ -90,7 +90,7 @@ app.post('/webhook', async (req, res) => {
 
     for (const entry of (body.entry || [])) {
       const messaging = entry.messaging || [];
-      
+
       for (const event of messaging) {
         // Sadece text mesajları işle (echo'ları atla)
         if (!event.message || !event.message.text || event.message.is_echo) continue;
@@ -175,11 +175,11 @@ async function processMessage(senderId, initialMessage, platform) {
       const currentState = getState(senderId);
       const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
       const aiResponse = aiResponseObj.text;
-      
+
       if (aiResponseObj.stateUpdates) {
         updateState(senderId, aiResponseObj.stateUpdates);
       }
-      
+
       // KESİN ÇÖZÜM (Foolproof check): Eğer yapay zeka JSON'da true yapmayı unutursa metinden yakala
       const lowerResp = aiResponse.toLowerCase();
       if (lowerResp.includes('nerede') || lowerResp.includes('hangi platform')) {
@@ -224,9 +224,9 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
 
   try {
     let pending = [initialMessage];
-    
+
     // Peş peşe gelen mesajları toplamak için 5 saniye bekle
-    await sleep(5000); 
+    await sleep(5000);
 
     if (lockEntry.queue.length > 0) {
       pending = pending.concat(lockEntry.queue.splice(0));
@@ -259,16 +259,16 @@ app.post('/webhook/whatsapp', async (req, res) => {
   try {
     const rawBody = typeof req.body === 'string' ? req.body : '';
     lastWaPayload = { headers: req.headers, rawBody, query: req.query };
-    
+
     let payload = {};
     try {
       payload = JSON.parse(rawBody);
     } catch (e) {
       log.warn('[whatsapp] JSON parse hatasi', rawBody);
     }
-    
+
     log.info('[whatsapp] Gelen raw payload', payload);
-    
+
     // AutoResponder bazen 'query' bazen 'message' olarak gönderir
     const message = payload.message || payload.query || rawBody;
     const senderId = payload.phone || payload.sender || 'unknown_wa';
@@ -319,9 +319,9 @@ app.post('/webhook/whatsapp', async (req, res) => {
     log.info('[whatsapp] Cevap üretildi', { senderId, len: aiResponse.length });
 
     // AutoResponder cevabı body'den okur (V1 ve V2 formatlarını aynı anda desteklemek için ikisini de dönüyoruz)
-    return res.json({ 
-      reply: aiResponse, 
-      replies: [{ message: aiResponse }] 
+    return res.json({
+      reply: aiResponse,
+      replies: [{ message: aiResponse }]
     });
   } catch (err) {
     log.error('[whatsapp] Hata', err);
@@ -342,7 +342,7 @@ app.post('/webhook/manychat', async (req, res) => {
     } catch (e) {
       log.warn('[manychat] JSON parse hatasi', rawBody);
     }
-    
+
     // Hem dogrudan body'yi hem de { data: Full Contact Data } paketini destekle
     const payload = parsedBody.data || parsedBody;
     const senderId = (payload.subscriber_id || payload.id) ? String(payload.subscriber_id || payload.id) : 'unknown_mc';
@@ -439,7 +439,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
           for (const [key, value] of params.entries()) {
             parsedBody[key] = value;
           }
-        } catch (err) {}
+        } catch (err) { }
       }
     } else if (typeof req.body === 'object') {
       parsedBody = req.body;
@@ -465,7 +465,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     res.set('Content-Type', 'text/plain; charset=utf-8');
 
     if (!messageText) {
-      log.warn('[autoresponder] Mesaj boş geldi. Payload incelemesi:', { 
+      log.warn('[autoresponder] Mesaj boş geldi. Payload incelemesi:', {
         rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
         query: req.query,
         parsedBody
@@ -476,10 +476,11 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
     if (isDuplicate(senderId, messageText)) {
-      return res.send(''); 
+      return res.send('');
     }
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
+      const isFirstMessage = getHistory(senderId).length === 0;
       addMessage(senderId, 'user', combinedMsg);
       const currentState = getState(senderId);
       const [catalog, history] = await Promise.all([
@@ -490,14 +491,17 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       if (respObj.stateUpdates) {
         updateState(senderId, respObj.stateUpdates);
       }
+      if (isFirstMessage) {
+        addMessage(senderId, 'assistant', GREETING_MESSAGE);
+      }
       addMessage(senderId, 'assistant', respObj.text);
       triggerAudit(senderId);
-      return respObj.text;
+      return isFirstMessage ? [GREETING_MESSAGE, respObj.text] : respObj.text;
     });
 
     if (aiResponse === null) {
-       res.set('Content-Type', 'application/json; charset=utf-8');
-       return res.json({ replies: [] });
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ replies: [] });
     }
 
     log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });

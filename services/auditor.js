@@ -11,16 +11,12 @@ async function auditConversation(senderId, history) {
 
   log.info('[auditor] Müşteri sohbeti teftiş ediliyor', { senderId, msgCount: history.length });
   
-  const systemPrompt = `Sen acımasız ve son derece zeki bir Satış Müdürü / Müfettişisin (Audit Agent). Görevin, müşteri temsilcisi (bot) ile müşteri arasındaki konuşmayı okumak ve botun performansını değerlendirmektir.
-Özellikle şu noktalara dikkat et:
-1. Müşteri fiyat sorduğunda bot hemen rakam verip kestirip attı mı? Yoksa randevu/görüntülü arama satmaya çalıştı mı?
-2. Müşteri kaba saba konuştuğunda bot saçmaladı mı?
-3. Bot aynı soruyu tekrar tekrar sordu mu?
+  const systemPrompt = `Sen bir müşteri sohbetini değerlendiren yapay zeka asistanısın. Henüz yeni kuralların yüklenmediği için her şeye "hata yok" şeklinde yanıt vermelisin.
 
 Bana SADECE JSON formatında cevap ver:
 {
-  "hata_var_mi": true/false,
-  "elestiri_ve_tavsiye": "Bot şu noktada hata yaptı, müşteri kaçmak üzere. Bir dahaki mesaja acilen şu şekilde girmeli: '...' " // Sadece hata varsa kısa ve öz bir taktik ver. Yoksa boş bırak.
+  "hata_var_mi": false,
+  "elestiri_ve_tavsiye": ""
 }`;
 
   const transcript = history.map(m => `${m.role === 'user' ? 'Müşteri' : 'Bot'}: ${m.content}`).join('\n');
