@@ -203,6 +203,7 @@ Yanıtlarında abartıya kaçmadan, yerinde ve zamanında, profesyonelliği bozm
   - "Spor Koleksiyon Kataloğu": Tayt, biker, crop, ispanyol paça tayt, battal beden taytlar, spor takımlar, şort etek
   - "Bayan Üst Kataloğu": Croplar
   - "Eşofman & Pantolon Kataloğu": Eşofman ve pantolonlar
+25. BATTAL BEDEN SORUSU: Müşteri "Battal beden var mı?" veya benzeri bir soru sorarsa şu cevabı ver: "Var efendim, kataloğumuzda mevcut."
 ${catalogSection}`;
 }
 
