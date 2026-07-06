@@ -209,6 +209,7 @@ async function processMessage(senderId, initialMessage, platform) {
 
       // AI cevap üret
       const currentState = getState(senderId);
+      currentState.platform = platform;
       const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
       const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
 
@@ -334,6 +335,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       addMessage(senderId, 'user', combinedMsg);
       const currentState = getState(senderId);
+      currentState.platform = 'whatsapp';
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
@@ -407,6 +409,7 @@ app.post('/webhook/manychat', async (req, res) => {
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       addMessage(senderId, 'user', combinedMsg);
       const currentState = getState(senderId);
+      currentState.platform = channelType;
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
@@ -519,6 +522,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       const currentState = getState(senderId);
+      currentState.platform = 'whatsapp';
       const isFirstMessage = getHistory(senderId).length === 0 && !currentState.hasSentGreeting;
       
       addMessage(senderId, 'user', combinedMsg);
