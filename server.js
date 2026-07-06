@@ -26,14 +26,15 @@ function sendTelegramNotification(customerNumber, customerMessage) {
 }
 
 function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
-  const devretRegex = /[\[\(]DEVRET[\]\)]|[\[\(]SİPARİŞ[\]\)]|[\[\(]SIPARIS[\]\)]/gi;
-  if (devretRegex.test(aiResponseText)) {
-    // Notify telegram
+  const devretRegex = /\[DEVRET\]|\(DEVRET\)|\[SİPARİŞ\]|\(SİPARİŞ\)|\[SIPARIS\]|\(SIPARIS\)/gi;
+  const cleanedText = aiResponseText.replace(devretRegex, '').trim();
+  
+  if (cleanedText !== aiResponseText.trim()) {
+    // The tag was found and removed, so we should notify telegram
     sendTelegramNotification(senderId, userMessage);
-    // Remove the tag
-    return aiResponseText.replace(devretRegex, '').trim();
   }
-  return aiResponseText;
+  
+  return cleanedText;
 }
 
 function triggerAudit(senderId) {
