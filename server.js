@@ -524,15 +524,16 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
         Promise.resolve(getHistory(senderId))
       ]);
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
         updateState(senderId, respObj.stateUpdates);
       }
       if (isFirstMessage) {
         addMessage(senderId, 'assistant', GREETING_MESSAGE);
       }
-      addMessage(senderId, 'assistant', respObj.text);
+      addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return isFirstMessage ? [GREETING_MESSAGE, respObj.text] : respObj.text;
+      return isFirstMessage ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
     });
 
     if (aiResponse === null) {
