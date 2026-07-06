@@ -14,6 +14,14 @@ function triggerAudit(senderId) {
   return;
 }
 
+const GREETING_MESSAGE = `Merhabalar, Peçen Tekstil’e hoş geldiniz.
+
+Peçen Tekstil olarak 22 yılı aşkın süredir kadın giyim alanında üretim yapan köklü bir imalat firmasıyız. Kadın spor giyim, gündelik giyim ve iç giyim koleksiyonlarımızla güncel moda trendlerini kaliteli üretim ve doğru fiyat anlayışıyla bir araya getiriyoruz.
+
+Toptan ihtiyaçlarınız için size en uygun ürünleri sunmaktan memnuniyet duyarız.
+
+Size nasıl yardımcı olabiliriz?`;
+
 const app = express();
 
 // Raw body for signature verification and debugging
@@ -516,7 +524,10 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
   } catch (err) {
     log.error('[autoresponder] Hata', err);
     res.set('Content-Type', 'application/json; charset=utf-8');
-    return res.status(500).json({ replies: [{ message: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.' }] });
+    return res.status(500).json({ 
+      reply: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.',
+      replies: [{ message: 'Teknik sorun yaşıyoruz, lütfen tekrar deneyin.' }] 
+    });
   }
 });
 
