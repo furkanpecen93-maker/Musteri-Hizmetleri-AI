@@ -295,6 +295,10 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
 
     if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
       clearHistory(senderId);
+      if (greetedUsers.has(senderId)) {
+        greetedUsers.delete(senderId);
+        fs.writeFileSync(greetedUsersFile, JSON.stringify([...greetedUsers]));
+      }
       return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
     }
 
