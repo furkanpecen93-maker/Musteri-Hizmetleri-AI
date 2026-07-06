@@ -50,6 +50,26 @@ Toptan ihtiyaçlarınız için size en uygun ürünleri sunmaktan memnuniyet duy
 
 Size nasıl yardımcı olabiliriz?`;
 
+const fs = require('fs');
+const path = require('path');
+const greetedUsersFile = path.join(__dirname, 'greeted_users.json');
+let greetedUsers = new Set();
+if (fs.existsSync(greetedUsersFile)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(greetedUsersFile, 'utf8'));
+    greetedUsers = new Set(data);
+  } catch (err) {
+    log.error('greeted_users.json okuma hatası', err);
+  }
+}
+function markUserAsGreeted(senderId) {
+  greetedUsers.add(senderId);
+  fs.writeFileSync(greetedUsersFile, JSON.stringify([...greetedUsers]));
+}
+function hasUserBeenGreeted(senderId) {
+  return greetedUsers.has(senderId);
+}
+
 const app = express();
 
 // Raw body for signature verification and debugging
@@ -62,7 +82,6 @@ app.use(express.text({
   type: '*/*'
 }));
 
-const path = require('path');
 // Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/katalog', (req, res) => {
@@ -523,7 +542,8 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
       const currentState = getState(senderId);
       currentState.platform = 'whatsapp';
-      const isFirstMessage = getHistory(senderId).length === 0 && !currentState.hasSentGreeting;
+      // SADECE daha önce HİÇ selamlanmamış kişilere gönder
+      const isFirstMessageEver = !hasUserBeenGreeted(senderId);
       
       addMessage(senderId, 'user', combinedMsg);
       const [catalog, history] = await Promise.all([
@@ -532,15 +552,20 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       ]);
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
+      
       if (respObj.stateUpdates) {
         updateState(senderId, respObj.stateUpdates);
       }
-      if (isFirstMessage) {
-        updateState(senderId, { hasSentGreeting: true });
+      
+      if (isFirstMessageEver) {
+        markUserAsGreeted(senderId);
+        addMessage(senderId, 'assistant', GREETING_MESSAGE);
       }
+      
       addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return aiResponseText;
+      
+      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
     });
 
     if (aiResponse === null) {
