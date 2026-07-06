@@ -516,9 +516,10 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     }
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      const isFirstMessage = getHistory(senderId).length === 0;
-      addMessage(senderId, 'user', combinedMsg);
       const currentState = getState(senderId);
+      const isFirstMessage = getHistory(senderId).length === 0 && !currentState.hasSentGreeting;
+      
+      addMessage(senderId, 'user', combinedMsg);
       const [catalog, history] = await Promise.all([
         getCatalog(),
         Promise.resolve(getHistory(senderId))
@@ -529,6 +530,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
         updateState(senderId, respObj.stateUpdates);
       }
       if (isFirstMessage) {
+        updateState(senderId, { hasSentGreeting: true });
         addMessage(senderId, 'assistant', GREETING_MESSAGE);
       }
       addMessage(senderId, 'assistant', aiResponseText);
