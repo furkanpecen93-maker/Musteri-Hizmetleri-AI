@@ -537,11 +537,10 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       }
       if (isFirstMessage) {
         updateState(senderId, { hasSentGreeting: true });
-        addMessage(senderId, 'assistant', GREETING_MESSAGE);
       }
       addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return isFirstMessage ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+      return aiResponseText;
     });
 
     if (aiResponse === null) {
