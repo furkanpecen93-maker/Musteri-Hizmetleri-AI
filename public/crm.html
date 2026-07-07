@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri Hizmetleri AI - Canlı Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="crm.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-robot"></i> AI Asistan</h2>
+                <span class="badge" id="chat-count">0</span>
+            </div>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="search-input" placeholder="Müşteri ara...">
+            </div>
+            <div class="chat-list" id="chat-list">
+                <!-- Chat items will be injected here -->
+                <div class="loading-spinner">Yükleniyor...</div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <div class="chat-header" id="chat-header" style="display: none;">
+                <div class="chat-user-info">
+                    <div class="avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="details">
+                        <h3 id="current-chat-name">Seçili Müşteri Yok</h3>
+                        <span class="status online" id="bot-status-text">Bot Aktif</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button id="toggle-pause-btn" class="btn btn-pause">
+                        <i class="fa-solid fa-pause"></i> Botu Sustur
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="empty-state">
+                    <i class="fa-solid fa-comments"></i>
+                    <p>Sohbet geçmişini görmek için soldan bir müşteri seçin.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="crm.js"></script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+[
+  {
+    "fiyat": "240₺",
+    "urun_kodu_ve_adi": "FIRFIRLI GECE ELBİSESİ FIRFIRLI GECE ELBİSESİ A KESİM SİYAH UZUN ELBİSE MİNİ DÜZ GECE ELBİSESİ SİMLİ GECE ELBİSESİ AYARLANIR BÜZGÜLÜ ELBİSE FERACE-NAMAZ ELBİSESİ TEK PARÇA NAMAZ ELBİSESİ ÜRÜNLERİ KEŞFET",
+    "katalog_kaynagi": "elbise-2026.pdf",
+    "bedenler": "",
+    "kumas_icerigi": "",
+    "gorsel_aciklamasi": ""
+  },
+  {
+    "fiyat": "450₺",
+    "urun_kodu_ve_adi": "23-B1 - A KESİM UZUN KOL ELBİSE",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI MDL İNTERLOK",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "400₺",
+    "urun_kodu_ve_adi": "23-B2 - KISA KOLLU AYARLANABİLEN BÜZGÜLÜ ELBİSE",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI MDL İNTERLOK",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "400₺",
+    "urun_kodu_ve_adi": "23-B3 - FIRFIR DETAYLI MİNİ GECE ELBİSESİ",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI MDL İNTERLOK",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "400₺",
+    "urun_kodu_ve_adi": "23-B4 - FIRFIR DETAYLI MİNİ GECE ELBİSESİ",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI MDL İNTERLOK",
+    "gorsel_aciklamasi": "BEYAZ",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "390₺",
+    "urun_kodu_ve_adi": "23-B5 - MİNİ SİYAH GECE ELBİSESİ",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI MDL İNTERLOK",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "350₺",
+    "urun_kodu_ve_adi": "23-B6 - SİMLİ MİNİ GECE ELBİSESİ",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "ÖRME SİMLİ BUZYY",
+    "gorsel_aciklamasi": "LEOPAR",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "220₺",
+    "urun_kodu_ve_adi": "23-B7 - FERACE- BAĞLAMALI NAMAZ ELBİSESİ",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "70 DENYE",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "fiyat": "240₺",
+    "urun_kodu_ve_adi": "23-B8 - ŞALLI TEK PARÇA NAMAZ ELBİSESİ-HİJAP",
+    "bedenler": "S-M-L-XL",
+    "kumas_icerigi": "70 DENYE",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "elbise-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "2 iplik",
+    "urun_kodu_ve_adi": "P-200 - NERVÜRLÜ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Gri-Menaj",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "2 iplik",
+    "urun_kodu_ve_adi": "P-201 - NERVÜRLÜ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "2 iplik",
+    "urun_kodu_ve_adi": "P-202 - NERVÜRLÜ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Lacivert",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "2 iplik",
+    "urun_kodu_ve_adi": "P-203 - NERVÜRLÜ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Scuba puf jarse",
+    "urun_kodu_ve_adi": "P-204 - KARGO CEPLİ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "190₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Scuba puf jarse",
+    "urun_kodu_ve_adi": "P-205 - KARGO CEPLİ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "GRİ-Menaj",
+    "fiyat": "190₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Scuba puf jarse",
+    "urun_kodu_ve_adi": "P-206 - KARGO CEPLİ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "190₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Scuba puf jarse",
+    "urun_kodu_ve_adi": "P-207 - KARGO CEPLİ PALAZZO OVERSİZE KESİM EŞOFMAN ALTI",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Lacivert",
+    "fiyat": "190₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Bürümcük",
+    "urun_kodu_ve_adi": "P-208 - YÜKSEK BEL GENİŞ KESİM PALAZZO PANTOLON",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "195₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Bürümcük",
+    "urun_kodu_ve_adi": "P-209 - YÜKSEK BEL GENİŞ KESİM PALAZZO PANTOLON",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "195₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Bürümcük",
+    "urun_kodu_ve_adi": "P-210 - LEOPAR DESEN YÜKSEK BEL GENİŞ KESİM PALAZZO PANTOLON",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Leopar",
+    "fiyat": "195₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Bürümcük",
+    "urun_kodu_ve_adi": "P-211 - LEOPAR DESEN YÜKSEK BEL LİKRALI PANTOLON",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Leopar",
+    "fiyat": "170₺",
+    "katalog_kaynagi": "esofman-pantolon-2026.pdf"
+  },
+  {
+    "fiyat": "80₺",
+    "urun_kodu_ve_adi": "KLOŞ ETEK UZUN KLOŞ ETEK UZUN KLOŞ ETEK UZUN ŞORTLU ETEK ŞORTLU ETEK LEOPAR ETEK UZUN BOY KALEM ETEK MİDİ BOY KLOŞ ETEK ASTARLARI ÜRÜNLERİ KEŞFET",
+    "katalog_kaynagi": "etek-2026.pdf",
+    "bedenler": "",
+    "kumas_icerigi": "",
+    "gorsel_aciklamasi": ""
+  },
+  {
+    "fiyat": "230₺",
+    "urun_kodu_ve_adi": "23-A1 - A KESİM KLOŞ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL 220GR",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "230₺",
+    "urun_kodu_ve_adi": "23-A2 - A KESİM KLOŞ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL 220GR",
+    "gorsel_aciklamasi": "KAHVERENGİ",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "230₺",
+    "urun_kodu_ve_adi": "23-A3 - A KESİM KLOŞ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL 220GR",
+    "gorsel_aciklamasi": "ANTRASİT",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "230₺",
+    "urun_kodu_ve_adi": "23-A4 - A KESİM KLOŞ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL 220GR",
+    "gorsel_aciklamasi": "EKRU",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "170₺",
+    "urun_kodu_ve_adi": "23-A5 - SİYAH YÜKSEK BEL KALEM ETEK UZUN",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL220GR",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "250₺",
+    "urun_kodu_ve_adi": "23-A6 - LEOPAR DESENLİ KLOŞ ETEK LEOPAR BASKILI",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL220GR",
+    "gorsel_aciklamasi": "LEOPAR",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "170₺",
+    "urun_kodu_ve_adi": "23-A7 - MİDİ BOY YÜKSEK BEL A KESİM ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "SCUBA PUF MDL 200GR",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "80₺",
+    "urun_kodu_ve_adi": "23-A8 - UZUN ETEK ASTARI",
+    "bedenler": "S-M-L-XL",
+    "kumas_icerigi": "70 DENYE",
+    "gorsel_aciklamasi": "BEYAZ",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "80₺",
+    "urun_kodu_ve_adi": "23-A9 - UZUN ETEK ASTARI",
+    "bedenler": "S-M-L-XL",
+    "kumas_icerigi": "70 DENYE",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "80₺",
+    "urun_kodu_ve_adi": "23-A10 - UZUN ETEK ASTARI",
+    "bedenler": "S-M-L-XL",
+    "kumas_icerigi": "70 DENYE",
+    "gorsel_aciklamasi": "EKRU",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "170₺",
+    "urun_kodu_ve_adi": "23-A11 - ŞORT ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "MİKRO SPRM 180GR",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "170₺",
+    "urun_kodu_ve_adi": "23-A12 - ŞORT ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "MİKRO SPRM 180GR",
+    "gorsel_aciklamasi": "BEYAZ",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "90₺",
+    "urun_kodu_ve_adi": "23-A13 - YÜKSEK BEL LİKRALI MİNİ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI DLG 220GR",
+    "gorsel_aciklamasi": "SİYAH",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "fiyat": "90₺",
+    "urun_kodu_ve_adi": "23-A14 - YÜKSEK BEL LİKRALI MİNİ ETEK",
+    "bedenler": "S-M-L-XL-2XL",
+    "kumas_icerigi": "LİKRALI DLG 220GR",
+    "gorsel_aciklamasi": "BEYAZ",
+    "katalog_kaynagi": "etek-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-300 - KAYIKÇI YAKA DEKOLTELİ BASİC CROP BLUZ",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "95₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-301 - KAYIKÇI YAKA DEKOLTELİ BASİC CROP BLUZ",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "95₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-302 - LEOPAR DESEN KAYIKÇI YAKA DEKOLTELİ BASİC CROP BLUZ",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Leopar",
+    "fiyat": "95₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-303 - GENİŞ YAKA KETEN GÖRÜNÜMLÜ OVERSİZE T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "135₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-304 - GENİŞ YAKA KETEN GÖRÜNÜMLÜ OVERSİZE T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "135₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro",
+    "urun_kodu_ve_adi": "P-305 - LEOPAR DESEN GENİŞ YAKA KETEN GÖRÜNÜMLÜ OVERSİZE T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Leopar",
+    "fiyat": "135₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-111 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-112 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-113 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-114 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-115 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-116 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-117 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-118 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-119 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-120 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-121 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-122 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "kadin-ust-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-100",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-101",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-102",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-103",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-104 - SPOR TAYT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "160₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-105 - SPOR TAYT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "160₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-106 - SPOR TAYT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "160₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-107 - İSPANYOL PAÇA TAYT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "2XL-3XL-4XL-5XL",
+    "urun_kodu_ve_adi": "P-108 - SIKILAŞTIRICI TAYT",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "190₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "2XL-3XL-4XL-5XL",
+    "urun_kodu_ve_adi": "P-109 - YÜKSEK BEL SIKILAŞTIRICI TAYT",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "200₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro Sprm",
+    "urun_kodu_ve_adi": "P-110A - ETEKLİ ŞORT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "170₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Mikro Sprm",
+    "urun_kodu_ve_adi": "P-110B - ETEKLİ ŞORT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "170₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-111 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-112 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-113 - SPORCU CROP T-SHİRT",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-114 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-115 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "bedenler": "S-M-L-XL-2XL",
+    "urun_kodu_ve_adi": "P-116 - DETAYLI CROP",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "105₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-117 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-118 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-119 - HALTER YAKA CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "120₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-120 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-121 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-122 - ÇAPRAZ CROP",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "110₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-123 - SPOR ALT-ÜST TAKIM",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "270₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-124 - SPOR ALT-ÜST TAKIM",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "270₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-125 - SPOR ALT-ÜST TAKIM",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Kahverengi",
+    "fiyat": "270₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-126 - SPOR BİYELİ ALT-ÜST TAKIM",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Siyah",
+    "fiyat": "290₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Likralı Dlg",
+    "urun_kodu_ve_adi": "P-127 - SPOR BİYELİ ALT-ÜST TAKIM",
+    "bedenler": "S-M-L-XL-2XL",
+    "gorsel_aciklamasi": "Antrasit",
+    "fiyat": "290₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Pamuklu",
+    "urun_kodu_ve_adi": "P-128 - SPOR ÇORAP LESAWEAR LOGOLU",
+    "bedenler": "Standart",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "220₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  },
+  {
+    "kumas_icerigi": "Pamuklu",
+    "urun_kodu_ve_adi": "P-129 - SPOR ÇORAP ÇEMBERLİ",
+    "bedenler": "Standart",
+    "gorsel_aciklamasi": "Beyaz",
+    "fiyat": "180₺",
+    "katalog_kaynagi": "spor-2026.pdf"
+  }
+]

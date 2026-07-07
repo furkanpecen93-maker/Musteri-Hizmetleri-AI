@@ -15,7 +15,15 @@ function sendTelegramNotification(customerNumber, customerMessage) {
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text })
+    body: JSON.stringify({ 
+      chat_id: TELEGRAM_CHAT_ID, 
+      text: text,
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🔇 Botu Sustur (15 Dk)", callback_data: `pause_${customerNumber}` }
+        ]]
+      }
+    })
   }).catch(err => log.error('[telegram] Bildirim hatası:', err.message));
 }
 
@@ -84,4 +92,61 @@ async function sendTelegramReport(reportText) {
   log.info(`[telegram] Rapor gönderildi (${chunks.length} parça)`);
 }
 
-module.exports = { sendTelegramNotification, sendTelegramReport, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID };
+// --- TELEGRAM POLLING (BUTONLARA TIKLANINCA ALGILAMAK İÇİN) ---
+let pauseCallback = null;
+function setPauseCallback(cb) {
+  pauseCallback = cb;
+}
+
+let lastUpdateId = 0;
+async function pollTelegram() {
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`;
+    const response = await fetch(url);
+    
+    if (response.ok) {
+      const data = await response.json();
+      for (const update of data.result) {
+        lastUpdateId = update.update_id;
+        
+        // Butona tıklandıysa
+        if (update.callback_query && update.callback_query.data) {
+          const cbData = update.callback_query.data;
+          const queryId = update.callback_query.id;
+          
+          if (cbData.startsWith('pause_')) {
+            const customerNumber = cbData.split('pause_')[1];
+            
+            if (pauseCallback) {
+              pauseCallback(customerNumber);
+              
+              // Ekrana popup bilgi ver
+              fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ callback_query_id: queryId, text: `✅ ${customerNumber} için bot 15 dakika duraklatıldı!`, show_alert: true })
+              }).catch(() => {});
+              
+              // Mesaja da geri dönüş yaz
+              fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: update.callback_query.message.chat.id, text: `✅ Bot ${customerNumber} numaralı müşteri için 15 dakika boyunca sessize alındı. Şimdi WhatsApp'a girip manuel cevap yazabilirsiniz.` })
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Network errors during long polling are normal, ignore
+  } finally {
+    // Her 2 saniyede bir veya istek bittiğinde tekrarla
+    setTimeout(pollTelegram, 2000);
+  }
+}
+
+// Polling'i başlat
+pollTelegram();
+
+module.exports = { sendTelegramNotification, sendTelegramReport, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, setPauseCallback };

@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const cron = require('node-cron');
 const { config } = require('./config/env');
 const log = require('./utils/logger');
-const { sendTelegramNotification } = require('./utils/telegram');
+const { sendTelegramNotification, sendTelegramReport, setPauseCallback } = require('./utils/telegram');
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
@@ -13,7 +13,6 @@ const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory
 const { trackEvent, analyzeAndTrack } = require('./services/analytics');
 const { enqueueFollowup, completeFollowup, cancelFollowup, processReminders } = require('./services/followup');
 const { sendDailyReport, generateDailyReport } = require('./services/daily_report');
-const { sendTelegramReport } = require('./utils/telegram');
 const fetch = require('node-fetch');
 
 function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
@@ -75,6 +74,23 @@ app.use(express.text({
   type: '*/*'
 }));
 
+// CRM Yetkilendirme (Basic Auth)
+const crmAuth = (req, res, next) => {
+  if (req.path.startsWith('/crm') || req.path.startsWith('/api/crm')) {
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    
+    // Kullanıcı adı: admin, Şifre: admin (Basit koruma)
+    if (login === 'admin' && password === 'admin') {
+      return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="401"');
+    return res.status(401).send('Authentication required.');
+  }
+  next();
+};
+app.use(crmAuth);
+
 // Statik dosyaları dışa aç (Katalog PDF'leri ve arayüzü)
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/katalog', (req, res) => {
@@ -109,9 +125,9 @@ app.get('/webhook', (req, res) => {
 
 // Per-sender processing lock (burst coalesce)
 const processingLock = new Map();
-const COALESCE_INITIAL_MS = 2000;
-const COALESCE_STRAGGLER_MS = 1000;
-const COALESCE_MAX_ITER = 3;
+const COALESCE_INITIAL_MS = 7000;
+const COALESCE_STRAGGLER_MS = 3000;
+const COALESCE_MAX_ITER = 4;
 
 // ── İnsan Devralma (Human Takeover) Sistemi ──
 // İnsan ekip bir müşteriye yazdığında bot 15 dk susar
@@ -123,6 +139,8 @@ function pauseBotForSender(senderId, reason = 'echo') {
   humanTakeover.set(senderId, { pauseUntil, reason });
   log.info(`[takeover] Bot ${Math.round(TAKEOVER_DURATION_MS / 60000)} dk duraklatıldı`, { senderId, reason });
 }
+// Telegram üzerinden manuel susturma talebi gelirse bu fonksiyonu çağır
+if (setPauseCallback) setPauseCallback((senderId) => pauseBotForSender(senderId, 'Telegram manuel devralma'));
 
 function isBotPaused(senderId) {
   const entry = humanTakeover.get(senderId);
@@ -245,11 +263,15 @@ async function processMessage(senderId, initialMessage, platform) {
 
       if (lockEntry.queue.length > 0) {
         pending = pending.concat(lockEntry.queue.splice(0));
-        continue;
+        if (iter < COALESCE_MAX_ITER - 1) continue;
       }
+      break;
+    }
 
-      // Mesajları birleştir
-      const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
+    processingLock.delete(senderId); // AI düşünürken gelenler yepyeni bir oturum başlatsın
+
+    // Mesajları birleştir
+    const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
       if (pending.length > 1) {
         log.info(`[process] ${pending.length} mesaj birleştirildi`, { senderId });
       }
@@ -327,10 +349,8 @@ async function processMessage(senderId, initialMessage, platform) {
         await sendMessengerMessage(senderId, aiResponse);
       }
 
-      // Straggler kontrolü
-      if (lockEntry.queue.length === 0) break;
-      pending = lockEntry.queue.splice(0);
-    }
+      // Straggler kontrolü döngüsü kaldırıldı (işlemler döngü dışında)
+
 
     log.info(`[process] İşlem tamamlandı`, { senderId, platform });
   } finally {
@@ -355,12 +375,17 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
   try {
     let pending = [initialMessage];
 
-    // Peş peşe gelen mesajları toplamak için 5 saniye bekle
-    await sleep(5000);
-
-    if (lockEntry.queue.length > 0) {
-      pending = pending.concat(lockEntry.queue.splice(0));
+    // Peş peşe gelen mesajları toplamak için bekle
+    for (let iter = 0; iter < COALESCE_MAX_ITER; iter++) {
+      await sleep(iter === 0 ? COALESCE_INITIAL_MS : COALESCE_STRAGGLER_MS);
+      if (lockEntry.queue.length > 0) {
+        pending = pending.concat(lockEntry.queue.splice(0));
+        if (iter < COALESCE_MAX_ITER - 1) continue;
+      }
+      break;
     }
+    
+    processingLock.delete(senderId); // Yeni mesajlar yeni döngü başlatsın
 
     const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
     if (pending.length > 1) {
@@ -403,6 +428,13 @@ app.post('/webhook/whatsapp', async (req, res) => {
     const message = payload.message || payload.query || rawBody;
     const senderId = payload.phone || payload.sender || 'unknown_wa';
     const messageText = (message || '').trim();
+
+    // Grup mesajlarını engelle (isGroup bayrağı veya ID'de '@g.us' / '-' kontrolü)
+    const isGroup = payload.isGroup || String(senderId).includes('@g.us') || String(senderId).includes('-');
+    if (isGroup) {
+      log.info('[whatsapp] Grup mesajı atlanıyor', { senderId });
+      return res.json({ reply: '', replies: [] });
+    }
 
     if (!messageText) {
       log.warn('[whatsapp] Mesaj bos geldi', rawBody);
@@ -785,8 +817,73 @@ app.post('/admin/catalog/refresh', (req, res) => {
 });
 
 // ══════════════════════════════════════════════
-// 5. ADMIN — İNSAN DEVRALMA (TAKEOVER) ENDPOINTLERİ
+// 5. ADMIN — İNSAN DEVRALMA (TAKEOVER) & CRM ENDPOINTLERİ
 // ══════════════════════════════════════════════
+
+// --- CRM API ---
+const { createClient } = require('@supabase/supabase-js');
+const crmSupabase = createClient(config.supabaseUrl, config.supabaseKey);
+
+app.get('/api/crm/chats', async (req, res) => {
+  try {
+    const { data, error } = await crmSupabase
+      .from('conversations')
+      .select('sender_id, content, timestamp, role')
+      .order('timestamp', { ascending: false })
+      .limit(1000);
+      
+    if (error) throw error;
+    
+    const chatsMap = new Map();
+    for (const row of data) {
+      if (!chatsMap.has(row.sender_id)) {
+        chatsMap.set(row.sender_id, row);
+      }
+    }
+    
+    // Ayrıca aktif susturmaları (takeover) da dön
+    const activeTakeovers = {};
+    for (const [sId, entry] of humanTakeover.entries()) {
+      if (Date.now() < entry.pauseUntil) {
+        activeTakeovers[sId] = true;
+      }
+    }
+
+    res.json({ chats: Array.from(chatsMap.values()), activeTakeovers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/crm/messages/:senderId', async (req, res) => {
+  try {
+    const { data, error } = await crmSupabase
+      .from('conversations')
+      .select('role, content, timestamp')
+      .eq('sender_id', req.params.senderId)
+      .order('timestamp', { ascending: true })
+      .limit(50);
+      
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/crm/pause/:senderId', (req, res) => {
+  const senderId = req.params.senderId;
+  const isPaused = isBotPaused(senderId);
+  
+  if (isPaused) {
+    resumeBot(senderId);
+    res.json({ status: 'resumed' });
+  } else {
+    pauseBotForSender(senderId, 'CRM Paneli manuel devralma');
+    res.json({ status: 'paused' });
+  }
+});
+
 
 // Bot'u belirli bir müşteri için durdur (WhatsApp veya herhangi bir platform)
 app.post('/admin/takeover', (req, res) => {
