@@ -73,6 +73,9 @@ async function selectChat(senderId) {
     currentChatNameEl.textContent = senderId;
     chatHeaderEl.style.display = 'flex';
     
+    // Mobil için class ekle
+    document.querySelector('.app-container').classList.add('mobile-chat-active');
+    
     updateHeaderStatus();
     await fetchMessages();
     
@@ -80,6 +83,14 @@ async function selectChat(senderId) {
     messagesPollingInterval = setInterval(fetchMessages, 5000);
     
     renderChatList(); // Update active class
+}
+
+const mobileBackBtn = document.getElementById('mobile-back-btn');
+if (mobileBackBtn) {
+    mobileBackBtn.onclick = () => {
+        document.querySelector('.app-container').classList.remove('mobile-chat-active');
+        if (messagesPollingInterval) clearInterval(messagesPollingInterval);
+    };
 }
 
 function updateHeaderStatus() {
