@@ -42,6 +42,23 @@ const config = {
 
   // ── WhatsApp AutoResponder webhook ──
   whatsappWebhookSecret: process.env.WHATSAPP_WEBHOOK_SECRET || '',
+
+  // ── Supabase (Hafıza) ──
+  supabaseUrl: process.env.SUPABASE_URL || 'https://pvipasgwzcrfkwjwrqwt.supabase.co',
+  supabaseKey: process.env.SUPABASE_KEY || 'sb_publishable_pIW0q6dsFivhi_V2zodp0w_5iOzOmOy',
+
+  // ── Günlük Rapor ──
+  dailyReportHour: parseInt(process.env.DAILY_REPORT_HOUR || '21', 10), // Türkiye saati (default: 21:00)
+  dailyReportEnabled: process.env.DAILY_REPORT_ENABLED !== 'false',     // default: true
+
+  // ── Takip Hatırlatma ──
+  followupReminder1hEnabled: process.env.FOLLOWUP_1H_ENABLED !== 'false',   // default: true
+  followupReminder24hEnabled: process.env.FOLLOWUP_24H_ENABLED !== 'false', // default: true
+  followupCheckIntervalMin: parseInt(process.env.FOLLOWUP_CHECK_INTERVAL || '10', 10), // dakika
+
+  // ── Telegram ──
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '8904842068:AAEXgPjzxibJ20vr3xoCu9NjgLG_xUmuU8c',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID || '1222016405',
 };
 
 module.exports = { config };

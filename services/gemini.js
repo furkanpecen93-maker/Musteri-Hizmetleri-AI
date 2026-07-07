@@ -131,9 +131,12 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     return await response.json();
   }
 
+  // Analytics için tool call bilgisi
+  let toolCallInfo = { toolCalled: null, queryUsed: null, resultCount: 0, productCodes: [] };
+
   let data = await makeGeminiRequest(payload);
   if (!data) {
-    return { text: 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.', stateUpdates: {} };
+    return { text: 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.', stateUpdates: {}, toolCallInfo };
   }
 
   // Fonksiyon Çağrısı Kontrolü
@@ -142,6 +145,14 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     log.info(`[gemini] FUNCTION CALL TETİKLENDİ: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
     const query = functionCall.args.query;
     const results = searchProducts(query);
+
+    // Analytics için tool call bilgisi kaydet
+    toolCallInfo = {
+      toolCalled: 'urun_sorgula',
+      queryUsed: query,
+      resultCount: results.length,
+      productCodes: results.map(r => r.urun_kodu).filter(Boolean)
+    };
     
     // Modelin ilk fonksiyon çağrısını içeriğe ekle
     payload.contents.push(data.candidates[0].content);
@@ -163,7 +174,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     // İkinci kez API'ye istek at
     data = await makeGeminiRequest(payload);
     if (!data) {
-      return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {} };
+      return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {}, toolCallInfo };
     }
   }
 
@@ -205,11 +216,12 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
 
     return {
       text: finalCevap,
-      stateUpdates: {}
+      stateUpdates: {},
+      toolCallInfo
     };
   } catch (err) {
     log.error('[gemini] Cevap okuma hatasi', err);
-    return { text: 'Teknik bir sorun yasiyoruz. Lutfen biraz sonra tekrar mesaj atin.', stateUpdates: {} };
+    return { text: 'Teknik bir sorun yasiyoruz. Lutfen biraz sonra tekrar mesaj atin.', stateUpdates: {}, toolCallInfo };
   }
 }
 

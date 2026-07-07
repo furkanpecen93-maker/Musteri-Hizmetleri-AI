@@ -1,125 +1,152 @@
-// services/memory.js — Basit in-memory konuşma geçmişi
+// services/memory.js — Supabase destekli kalıcı konuşma geçmişi
+const { createClient } = require('@supabase/supabase-js');
+const { config } = require('../config/env');
 const log = require('../utils/logger');
 
-// In-memory store — {senderId: [{role, content, timestamp}]}
-const conversations = new Map();
-const userStates = new Map(); // Store state per user (e.g. hasAskedLocation, profile)
-const MAX_HISTORY = 20; // Son 20 mesaj tutulur
-const CONVERSATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat
+// Supabase İstemcisi
+const supabase = createClient(config.supabaseUrl, config.supabaseKey);
 
-/**
- * Kullanıcı state'ini getir
- */
-function getState(senderId) {
+// RAM Cache (Her seferinde veritabanına sorgu atmamak için)
+const conversations = new Map();
+const userStates = new Map();
+const greetedUsers = new Set();
+const MAX_HISTORY = 20;
+
+async function getState(senderId) {
   if (!userStates.has(senderId)) {
-    userStates.set(senderId, { hasAskedLocation: false, profile: {} });
+    try {
+      const { data, error } = await supabase.from('user_states').select('state').eq('sender_id', senderId).single();
+      if (data && data.state) {
+        userStates.set(senderId, data.state);
+      } else {
+        userStates.set(senderId, { hasAskedLocation: false, profile: {} });
+      }
+    } catch (err) {
+      log.error('[memory] getState error', err);
+      userStates.set(senderId, { hasAskedLocation: false, profile: {} });
+    }
   }
   return userStates.get(senderId);
 }
 
-/**
- * Kullanıcı state'ini güncelle
- */
-function updateState(senderId, updates) {
-  const currentState = getState(senderId);
+async function updateState(senderId, updates) {
+  const currentState = await getState(senderId);
   Object.assign(currentState, updates);
+  
+  try {
+    await supabase.from('user_states').upsert({
+      sender_id: senderId,
+      state: currentState
+    });
+  } catch (err) {
+    log.error('[memory] updateState error', err);
+  }
 }
 
-/**
- * Konuşma geçmişine mesaj ekle
- */
-function addMessage(senderId, role, content) {
+async function addMessage(senderId, role, content) {
   if (!conversations.has(senderId)) {
-    conversations.set(senderId, []);
+    await getHistory(senderId);
   }
+  const history = conversations.get(senderId) || [];
+  const timestamp = Date.now();
   
-  const history = conversations.get(senderId);
-  history.push({
-    role,
-    content,
-    timestamp: Date.now()
-  });
+  history.push({ role, content, timestamp });
+  while (history.length > MAX_HISTORY) history.shift();
+  conversations.set(senderId, history);
 
-  // Max history aş → eski mesajları sil
-  while (history.length > MAX_HISTORY) {
-    history.shift();
+  try {
+    await supabase.from('conversations').insert({
+      sender_id: senderId,
+      role,
+      content,
+      timestamp
+    });
+  } catch (err) {
+    log.error('[memory] addMessage DB error', err);
   }
 }
 
-/**
- * Konuşma geçmişini getir
- */
-function getHistory(senderId) {
-  const history = conversations.get(senderId);
-  if (!history) return [];
-  
-  // 24 saatten eski konuşmaları temizle
-  const cutoff = Date.now() - CONVERSATION_TTL_MS;
-  const filtered = history.filter(m => m.timestamp > cutoff);
-  
-  if (filtered.length !== history.length) {
-    conversations.set(senderId, filtered);
+async function getHistory(senderId) {
+  if (conversations.has(senderId)) {
+    return conversations.get(senderId);
   }
   
-  return filtered;
+  const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('role, content, timestamp')
+      .eq('sender_id', senderId)
+      .gt('timestamp', cutoff)
+      .order('timestamp', { ascending: true })
+      .limit(MAX_HISTORY);
+
+    const history = data ? data.map(d => ({ role: d.role, content: d.content, timestamp: d.timestamp })) : [];
+    conversations.set(senderId, history);
+    return history;
+  } catch (err) {
+    log.error('[memory] getHistory error', err);
+    return [];
+  }
 }
 
-/**
- * Duplicate mesaj kontrolü (30 saniye içinde aynı mesaj)
- */
-function isDuplicate(senderId, messageText, windowMs = 30000) {
-  const history = conversations.get(senderId);
-  if (!history || history.length === 0) return false;
+async function isDuplicate(senderId, messageText, windowMs = 30000) {
+  if (!conversations.has(senderId)) {
+    await getHistory(senderId);
+  }
+  const history = conversations.get(senderId) || [];
+  if (history.length === 0) return false;
   
   const cutoff = Date.now() - windowMs;
-  return history.some(m => 
-    m.role === 'user' && 
-    m.content === messageText && 
-    m.timestamp > cutoff
-  );
+  return history.some(m => m.role === 'user' && m.content === messageText && m.timestamp > cutoff);
 }
 
-/**
- * Periyodik temizlik — 24 saatten eski konuşmaları sil
- */
-function cleanup() {
-  const cutoff = Date.now() - CONVERSATION_TTL_MS;
-  let cleaned = 0;
+async function clearHistory(senderId) {
+  conversations.delete(senderId);
+  userStates.delete(senderId);
+  greetedUsers.delete(senderId);
   
-  for (const [senderId, history] of conversations) {
-    const latest = history[history.length - 1];
-    if (!latest || latest.timestamp < cutoff) {
-      conversations.delete(senderId);
-      cleaned++;
+  try {
+    await Promise.all([
+      supabase.from('conversations').delete().eq('sender_id', senderId),
+      supabase.from('user_states').delete().eq('sender_id', senderId),
+      supabase.from('greeted_users').delete().eq('sender_id', senderId)
+    ]);
+    log.info(`[memory] ${senderId} icin gecmis ve state temizlendi.`);
+  } catch (err) {
+    log.error('[memory] clearHistory error', err);
+  }
+}
+
+async function markUserAsGreeted(senderId) {
+  greetedUsers.add(senderId);
+  try {
+    await supabase.from('greeted_users').upsert({ sender_id: senderId });
+  } catch (err) {
+    log.error('[memory] markUserAsGreeted error', err);
+  }
+}
+
+async function hasUserBeenGreeted(senderId) {
+  if (greetedUsers.has(senderId)) return true;
+  
+  try {
+    const { data } = await supabase.from('greeted_users').select('sender_id').eq('sender_id', senderId).single();
+    if (data) {
+      greetedUsers.add(senderId);
+      return true;
     }
+  } catch (err) {
+    // Eğer row yoksa single() hata atar, problem yok.
   }
-  
-  if (cleaned > 0) {
-    log.info('[memory] Eski konuşmalar temizlendi', { cleaned });
-  }
-}
-
-// Her 1 saatte temizlik yap
-setInterval(cleanup, 60 * 60 * 1000);
-
-/**
- * Mesajın standart bir karşılama olup olmadığını kontrol et
- */
-function isGenericGreeting(messageText) {
-  if (!messageText) return false;
-  const txt = messageText.toLowerCase().trim();
-  
-  // Direkt eşleşmeler (Sadece bunlarda AI'ı es geçip manuel soru sorulacak)
-  const exactMatches = ['merhaba', 'merhabalar', 'selam', 'selamlar', 'iyi günler', 'kolay gelsin', 'nasılsınız', 'slm'];
-  if (exactMatches.includes(txt)) return true;
-  
   return false;
 }
 
-function clearHistory(senderId) {
-  conversations.delete(senderId);
-  userStates.delete(senderId);
-  log.info(`[memory] ${senderId} icin gecmis ve state temizlendi.`);
+function isGenericGreeting(messageText) {
+  if (!messageText) return false;
+  const txt = messageText.toLowerCase().trim();
+  const exactMatches = ['merhaba', 'merhabalar', 'selam', 'selamlar', 'iyi günler', 'kolay gelsin', 'nasılsınız', 'slm'];
+  return exactMatches.includes(txt);
 }
 
-module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting, clearHistory };
+module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting, clearHistory, markUserAsGreeted, hasUserBeenGreeted };

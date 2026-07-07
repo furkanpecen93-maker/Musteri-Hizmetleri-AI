@@ -2,28 +2,19 @@
 // Instagram DM + Facebook Messenger + WhatsApp (AutoResponder)
 const express = require('express');
 const crypto = require('crypto');
+const cron = require('node-cron');
 const { config } = require('./config/env');
 const log = require('./utils/logger');
+const { sendTelegramNotification } = require('./utils/telegram');
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
-const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory } = require('./services/memory');
+const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory, hasUserBeenGreeted: memHasUserBeenGreeted } = require('./services/memory');
+const { trackEvent, analyzeAndTrack } = require('./services/analytics');
+const { enqueueFollowup, completeFollowup, cancelFollowup, processReminders } = require('./services/followup');
+const { sendDailyReport, generateDailyReport } = require('./services/daily_report');
+const { sendTelegramReport } = require('./utils/telegram');
 const fetch = require('node-fetch');
-
-// Telegram Bildirim Ayarları
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8904842068:AAEXgPjzxibJ20vr3xoCu9NjgLG_xUmuU8c';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '1222016405';
-
-function sendTelegramNotification(customerNumber, customerMessage) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const text = `🚨 DİKKAT: Bir müşteri ekibe devredildi!\n\n📱 Müşteri/Numara: ${customerNumber}\n💬 Son Mesajı: "${customerMessage}"`;
-  
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text })
-  }).catch(err => log.error('[telegram] Bildirim hatası:', err.message));
-}
 
 function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
   const devretRegex = /\[DEVRET\]|\(DEVRET\)|\[SİPARİŞ\]|\(SİPARİŞ\)|\[SIPARIS\]|\(SIPARIS\)/gi;
@@ -32,6 +23,8 @@ function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
   if (cleanedText !== aiResponseText.trim()) {
     // The tag was found and removed, so we should notify telegram
     sendTelegramNotification(senderId, userMessage);
+    // Ekibe devredilen müşteriye hatırlatma gönderilmemeli
+    cancelFollowup(senderId).catch(() => {});
   }
   
   return cleanedText;
@@ -120,6 +113,33 @@ const COALESCE_INITIAL_MS = 2000;
 const COALESCE_STRAGGLER_MS = 1000;
 const COALESCE_MAX_ITER = 3;
 
+// ── İnsan Devralma (Human Takeover) Sistemi ──
+// İnsan ekip bir müşteriye yazdığında bot 15 dk susar
+const TAKEOVER_DURATION_MS = 15 * 60 * 1000; // 15 dakika
+const humanTakeover = new Map(); // senderId → { pauseUntil: timestamp, reason: string }
+
+function pauseBotForSender(senderId, reason = 'echo') {
+  const pauseUntil = Date.now() + TAKEOVER_DURATION_MS;
+  humanTakeover.set(senderId, { pauseUntil, reason });
+  log.info(`[takeover] Bot ${Math.round(TAKEOVER_DURATION_MS / 60000)} dk duraklatıldı`, { senderId, reason });
+}
+
+function isBotPaused(senderId) {
+  const entry = humanTakeover.get(senderId);
+  if (!entry) return false;
+  if (Date.now() > entry.pauseUntil) {
+    humanTakeover.delete(senderId); // Süre doldu, temizle
+    log.info(`[takeover] Bot tekrar aktif`, { senderId });
+    return false;
+  }
+  return true;
+}
+
+function resumeBot(senderId) {
+  humanTakeover.delete(senderId);
+  log.info(`[takeover] Bot manuel olarak devam ettirildi`, { senderId });
+}
+
 app.post('/webhook', async (req, res) => {
   // Meta 20 saniye timeout uyguluyor — hemen 200 dön
   res.status(200).send('EVENT_RECEIVED');
@@ -147,18 +167,34 @@ app.post('/webhook', async (req, res) => {
       const messaging = entry.messaging || [];
 
       for (const event of messaging) {
-        // Sadece text mesajları işle (echo'ları atla)
-        if (!event.message || !event.message.text || event.message.is_echo) continue;
+        if (!event.message || !event.message.text) continue;
+
+        // ── İNSAN DEVRALMA: Echo mesajı = insan ekip yazdı ──
+        if (event.message.is_echo) {
+          // Echo'daki recipient.id müşterinin ID'sidir
+          const customerId = event.recipient?.id;
+          if (customerId) {
+            pauseBotForSender(customerId, 'echo');
+            log.info(`[takeover] İnsan ekip mesaj gönderdi, bot duraklatıldı`, { customerId, platform });
+          }
+          continue;
+        }
 
         const senderId = event.sender.id;
         const messageText = event.message.text.trim();
 
         if (!senderId || !messageText) continue;
 
+        // ── İNSAN DEVRALMA: Bot duraklatılmış mı kontrol et ──
+        if (isBotPaused(senderId)) {
+          log.info(`[takeover] Bot duraklatılmış, mesaj atlanıyor`, { senderId, platform });
+          continue;
+        }
+
         log.info(`[webhook] ${platform} mesaj alındı`, { senderId, len: messageText.length });
 
         // Duplicate kontrolü
-        if (isDuplicate(senderId, messageText)) {
+        if (await isDuplicate(senderId, messageText)) {
           log.info(`[webhook] Duplicate mesaj atlandı`, { senderId });
           continue;
         }
@@ -192,6 +228,18 @@ async function processMessage(senderId, initialMessage, platform) {
   try {
     let pending = [initialMessage];
 
+    // Müşteri mesaj attı — mevcut followup'ı kapat (müşteri döndü)
+    completeFollowup(senderId).catch(() => {});
+
+    // Yeni müşteri mi kontrol et (analytics için)
+    const isNewCustomer = !hasUserBeenGreeted(senderId);
+
+    // Analytics: mesaj alındı
+    trackEvent(senderId, 'message_received', platform, {
+      message_length: initialMessage.length,
+      is_new_customer: isNewCustomer
+    }).catch(() => {});
+
     for (let iter = 0; iter < COALESCE_MAX_ITER; iter++) {
       await sleep(iter === 0 ? COALESCE_INITIAL_MS : COALESCE_STRAGGLER_MS);
 
@@ -218,7 +266,7 @@ async function processMessage(senderId, initialMessage, platform) {
       }
 
       // Kullanıcı mesajını kaydet
-      addMessage(senderId, 'user', combinedMessage);
+      await addMessage(senderId, 'user', combinedMessage);
 
       // Katalog ve geçmişi al
       const [catalog, history] = await Promise.all([
@@ -226,14 +274,28 @@ async function processMessage(senderId, initialMessage, platform) {
         Promise.resolve(getHistory(senderId))
       ]);
 
-      // AI cevap üret
-      const currentState = getState(senderId);
+      // İlk mesaj kontrolü ve Karşılama
+      const isFirstMessageEver = !hasUserBeenGreeted(senderId);
+      if (isFirstMessageEver) {
+        markUserAsGreeted(senderId);
+        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+        if (platform === 'instagram') {
+          await sendInstagramMessage(senderId, GREETING_MESSAGE);
+        } else {
+          await sendMessengerMessage(senderId, GREETING_MESSAGE);
+        }
+      }
+
+      // AI cevap üret (süre ölç)
+      const aiStartTime = Date.now();
+      const currentState = await getState(senderId);
       currentState.platform = platform;
       const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
+      const responseTimeMs = Date.now() - aiStartTime;
       const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
 
       if (aiResponseObj.stateUpdates) {
-        updateState(senderId, aiResponseObj.stateUpdates);
+        await updateState(senderId, aiResponseObj.stateUpdates);
       }
 
       // KESİN ÇÖZÜM (Foolproof check): Eğer yapay zeka JSON'da true yapmayı unutursa metinden yakala
@@ -245,6 +307,18 @@ async function processMessage(senderId, initialMessage, platform) {
       // AI cevabını kaydet
       addMessage(senderId, 'assistant', aiResponse);
       triggerAudit(senderId);
+
+      // Analytics: bot cevabını ve AI davranışını takip et
+      analyzeAndTrack(senderId, combinedMessage, aiResponseObj.text, platform, {
+        responseTimeMs,
+        toolCalled: aiResponseObj.toolCallInfo?.toolCalled,
+        queryUsed: aiResponseObj.toolCallInfo?.queryUsed,
+        resultCount: aiResponseObj.toolCallInfo?.resultCount,
+        productCodes: aiResponseObj.toolCallInfo?.productCodes
+      }).catch(() => {});
+
+      // Followup kuyruğuna ekle (bot cevap verdi, müşteri cevap verecek mi?)
+      enqueueFollowup(senderId, platform).catch(() => {});
 
       // Platforma göre gönder
       if (platform === 'instagram') {
@@ -294,11 +368,7 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
     }
 
     if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
-      clearHistory(senderId);
-      if (greetedUsers.has(senderId)) {
-        greetedUsers.delete(senderId);
-        fs.writeFileSync(greetedUsersFile, JSON.stringify([...greetedUsers]));
-      }
+      await clearHistory(senderId);
       return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
     }
 
@@ -350,27 +420,60 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     log.info('[whatsapp] Mesaj alındı', { senderId, len: messageText.length });
 
-    // Duplicate kontrolü
-    if (isDuplicate(senderId, messageText)) {
+    // İnsan devralma kontrolü
+    if (isBotPaused(senderId)) {
+      log.info(`[takeover] Bot duraklatılmış, WhatsApp mesajı atlanıyor`, { senderId });
       return res.json({ reply: '', replies: [] });
     }
 
+    // Duplicate kontrolü
+    if (await isDuplicate(senderId, messageText)) {
+      return res.json({ reply: '', replies: [] });
+    }
+
+    // Analytics & followup: müşteri mesaj attı
+    completeFollowup(senderId).catch(() => {});
+    const isNewCust = !(await memHasUserBeenGreeted(senderId));
+    trackEvent(senderId, 'message_received', 'whatsapp', { message_length: messageText.length, is_new_customer: isNewCust }).catch(() => {});
+
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      addMessage(senderId, 'user', combinedMsg);
-      const currentState = getState(senderId);
+      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
+      
+      await addMessage(senderId, 'user', combinedMsg);
+      const currentState = await getState(senderId);
       currentState.platform = 'whatsapp';
       const [catalog, history] = await Promise.all([
         getCatalog(),
-        Promise.resolve(getHistory(senderId))
+        getHistory(senderId)
       ]);
+      const aiStartTime = Date.now();
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
-        updateState(senderId, respObj.stateUpdates);
+        await updateState(senderId, respObj.stateUpdates);
       }
-      addMessage(senderId, 'assistant', aiResponseText);
+
+      // Analytics tracking
+      analyzeAndTrack(senderId, combinedMsg, respObj.text, 'whatsapp', {
+        responseTimeMs,
+        toolCalled: respObj.toolCallInfo?.toolCalled,
+        queryUsed: respObj.toolCallInfo?.queryUsed,
+        resultCount: respObj.toolCallInfo?.resultCount,
+        productCodes: respObj.toolCallInfo?.productCodes
+      }).catch(() => {});
+
+      // Followup kuyruğuna ekle
+      enqueueFollowup(senderId, 'whatsapp').catch(() => {});
+
+      if (isFirstMessageEver) {
+        await markUserAsGreeted(senderId);
+        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+      }
+
+      await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return aiResponseText;
+      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
     });
 
     if (aiResponse === null) {
@@ -417,8 +520,17 @@ app.post('/webhook/manychat', async (req, res) => {
 
     log.info('[manychat] Mesaj alındı', { senderId, len: messageText.length });
 
+    // İnsan devralma kontrolü
+    if (isBotPaused(senderId)) {
+      log.info(`[takeover] Bot duraklatılmış, ManyChat mesajı atlanıyor`, { senderId, platform: channelType });
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages: [] }
+      });
+    }
+
     // Duplicate kontrolü
-    if (isDuplicate(senderId, messageText)) {
+    if (await isDuplicate(senderId, messageText)) {
       return res.json({
         version: "v2",
         content: {
@@ -428,23 +540,50 @@ app.post('/webhook/manychat', async (req, res) => {
       });
     }
 
+    // Analytics & followup: müşteri mesaj attı
+    completeFollowup(senderId).catch(() => {});
+    const isNewMc = !(await memHasUserBeenGreeted(senderId));
+    trackEvent(senderId, 'message_received', channelType, { message_length: messageText.length, is_new_customer: isNewMc }).catch(() => {});
+
     // Mesajı kuyruğa al veya işle
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      addMessage(senderId, 'user', combinedMsg);
-      const currentState = getState(senderId);
+      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
+      
+      await addMessage(senderId, 'user', combinedMsg);
+      const currentState = await getState(senderId);
       currentState.platform = channelType;
       const [catalog, history] = await Promise.all([
         getCatalog(),
-        Promise.resolve(getHistory(senderId))
+        getHistory(senderId)
       ]);
+      const aiStartTime = Date.now();
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
-        updateState(senderId, respObj.stateUpdates);
+        await updateState(senderId, respObj.stateUpdates);
       }
-      addMessage(senderId, 'assistant', aiResponseText);
+
+      // Analytics tracking
+      analyzeAndTrack(senderId, combinedMsg, respObj.text, channelType, {
+        responseTimeMs,
+        toolCalled: respObj.toolCallInfo?.toolCalled,
+        queryUsed: respObj.toolCallInfo?.queryUsed,
+        resultCount: respObj.toolCallInfo?.resultCount,
+        productCodes: respObj.toolCallInfo?.productCodes
+      }).catch(() => {});
+
+      // Followup kuyruğuna ekle
+      enqueueFollowup(senderId, channelType).catch(() => {});
+      
+      if (isFirstMessageEver) {
+        await markUserAsGreeted(senderId);
+        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+      }
+      
+      await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return aiResponseText;
+      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
     });
 
     if (aiResponse === null) {
@@ -454,19 +593,18 @@ app.post('/webhook/manychat', async (req, res) => {
       });
     }
 
-    log.info('[manychat] Cevap üretildi', { senderId, len: aiResponse.length });
+    log.info('[manychat] Cevap üretildi', { senderId, len: Array.isArray(aiResponse) ? aiResponse.length : aiResponse.length });
 
     // ManyChat Dynamic Block v2 formatında cevap dön
+    const messages = Array.isArray(aiResponse) 
+      ? aiResponse.map(msg => ({ type: "text", text: msg })) 
+      : [{ type: "text", text: aiResponse }];
+
     return res.json({
       version: "v2",
       content: {
         type: channelType,
-        messages: [
-          {
-            type: "text",
-            text: aiResponse
-          }
-        ]
+        messages: messages
       }
     });
   } catch (err) {
@@ -539,34 +677,53 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
-    if (isDuplicate(senderId, messageText)) {
+    if (await isDuplicate(senderId, messageText)) {
       return res.send('');
     }
 
+    // Analytics & followup: müşteri mesaj attı
+    completeFollowup(senderId).catch(() => {});
+    const isNewAr = !(await memHasUserBeenGreeted(senderId));
+    trackEvent(senderId, 'message_received', 'whatsapp', { message_length: messageText.length, is_new_customer: isNewAr }).catch(() => {});
+
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      const currentState = getState(senderId);
+      const currentState = await getState(senderId);
       currentState.platform = 'whatsapp';
       // SADECE daha önce HİÇ selamlanmamış kişilere gönder
-      const isFirstMessageEver = !hasUserBeenGreeted(senderId);
+      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
       
-      addMessage(senderId, 'user', combinedMsg);
+      await addMessage(senderId, 'user', combinedMsg);
       const [catalog, history] = await Promise.all([
         getCatalog(),
-        Promise.resolve(getHistory(senderId))
+        getHistory(senderId)
       ]);
+      const aiStartTime = Date.now();
       const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       
       if (respObj.stateUpdates) {
-        updateState(senderId, respObj.stateUpdates);
+        await updateState(senderId, respObj.stateUpdates);
       }
+
+      // Analytics tracking
+      analyzeAndTrack(senderId, combinedMsg, respObj.text, 'whatsapp', {
+        responseTimeMs,
+        toolCalled: respObj.toolCallInfo?.toolCalled,
+        queryUsed: respObj.toolCallInfo?.queryUsed,
+        resultCount: respObj.toolCallInfo?.resultCount,
+        productCodes: respObj.toolCallInfo?.productCodes
+      }).catch(() => {});
+
+      // Followup kuyruğuna ekle
+      enqueueFollowup(senderId, 'whatsapp').catch(() => {});
       
       if (isFirstMessageEver) {
-        markUserAsGreeted(senderId);
-        addMessage(senderId, 'assistant', GREETING_MESSAGE);
+        await markUserAsGreeted(senderId);
+        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
       }
       
-      addMessage(senderId, 'assistant', aiResponseText);
+      await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
       
       return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
@@ -628,7 +785,71 @@ app.post('/admin/catalog/refresh', (req, res) => {
 });
 
 // ══════════════════════════════════════════════
-// 5. SUNUCUYU BAŞLAT
+// 5. ADMIN — İNSAN DEVRALMA (TAKEOVER) ENDPOINTLERİ
+// ══════════════════════════════════════════════
+
+// Bot'u belirli bir müşteri için durdur (WhatsApp veya herhangi bir platform)
+app.post('/admin/takeover', (req, res) => {
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) { body = {}; }
+  }
+  const senderId = body.sender_id || req.query.sender_id;
+  const action = body.action || req.query.action || 'pause'; // 'pause' veya 'resume'
+  const durationMin = parseInt(body.duration || req.query.duration || '15', 10);
+
+  if (!senderId) {
+    return res.status(400).json({ error: 'sender_id gerekli' });
+  }
+
+  if (action === 'resume') {
+    resumeBot(senderId);
+    return res.json({ status: 'ok', message: `Bot ${senderId} için devam ettirildi.` });
+  }
+
+  // Pause
+  const pauseUntil = Date.now() + durationMin * 60 * 1000;
+  humanTakeover.set(senderId, { pauseUntil, reason: 'manual' });
+  log.info(`[takeover] Bot manuel olarak ${durationMin} dk duraklatıldı`, { senderId });
+  return res.json({ status: 'ok', message: `Bot ${senderId} için ${durationMin} dk duraklatıldı.` });
+});
+
+// Aktif takeover'ları listele
+app.get('/admin/takeover', (req, res) => {
+  const active = [];
+  const now = Date.now();
+  for (const [senderId, entry] of humanTakeover.entries()) {
+    if (now < entry.pauseUntil) {
+      active.push({
+        senderId,
+        reason: entry.reason,
+        remainingMin: Math.round((entry.pauseUntil - now) / 60000),
+        pauseUntil: new Date(entry.pauseUntil).toISOString()
+      });
+    }
+  }
+  res.json({ activeTakeovers: active, count: active.length });
+});
+
+// ══════════════════════════════════════════════
+// 6. ADMIN — TEST RAPOR ENDPOINTİ
+// ══════════════════════════════════════════════
+app.get('/admin/report/test', async (req, res) => {
+  try {
+    log.info('[admin] Test raporu tetiklendi');
+    const { getTurkeyDateStr } = require('./services/daily_report');
+    const dateStr = req.query.date || getTurkeyDateStr();
+    const reportText = await generateDailyReport(dateStr);
+    await sendTelegramReport(reportText);
+    res.json({ status: 'ok', message: 'Test raporu Telegram\'a gönderildi', date: dateStr });
+  } catch (err) {
+    log.error('[admin] Test raporu hatası', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════
+// 6. SUNUCUYU BAŞLAT + CRON JOB'LARI KAYDET
 // ══════════════════════════════════════════════
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -639,4 +860,24 @@ app.listen(config.port, '0.0.0.0', () => {
     meta: config.metaPageAccessToken ? '✅' : '❌',
     sheets: config.googleSheetsId ? '✅' : '❌'
   });
+
+  // ── Cron Job: Günlük Rapor (her gün saat 21:00 Türkiye saati = 18:00 UTC) ──
+  if (config.dailyReportEnabled) {
+    const utcHour = (config.dailyReportHour - 3 + 24) % 24; // Türkiye → UTC dönüşümü
+    const cronExpr = `0 ${utcHour} * * *`;
+    cron.schedule(cronExpr, () => {
+      log.info('[cron] Günlük rapor tetiklendi');
+      sendDailyReport().catch(err => log.error('[cron] Rapor hatası', err));
+    });
+    log.info(`[cron] Günlük rapor zamanlandı: her gün saat ${config.dailyReportHour}:00 (TR) / ${utcHour}:00 (UTC)`);
+  }
+
+  // ── Cron Job: Hatırlatma Kontrolü (her 10 dakikada bir) ──
+  if (config.followupReminder1hEnabled || config.followupReminder24hEnabled) {
+    const intervalMin = config.followupCheckIntervalMin || 10;
+    cron.schedule(`*/${intervalMin} * * * *`, () => {
+      processReminders().catch(err => log.error('[cron] Hatırlatma hatası', err));
+    });
+    log.info(`[cron] Hatırlatma kontrolü zamanlandı: her ${intervalMin} dakikada bir`);
+  }
 });
