@@ -284,7 +284,7 @@ async function processMessage(senderId, initialMessage, platform) {
         } else {
           await sendMessengerMessage(senderId, wipeMsg);
         }
-        break;
+        return;
       }
 
       // Kullanıcı mesajını kaydet
