@@ -1,12 +1,16 @@
 :root {
     --bg-dark: #f8fafc;
     --bg-panel: #ffffff;
-    --text-main: #0f172a;
+    --bg-body: #fafcfd;
+    --text-main: #334155;
     --text-muted: #64748b;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --success: #10b981;
-    --danger: #ef4444;
+    --accent: #b4d4ff;
+    --accent-hover: #9ac0ff;
+    --primary: #e0c3fc;
+    --success: #d0f4de;
+    --danger: #ffc8dd;
+    --warning: #fcf1b6;
+    --info: #cbf0f8;
     --border: #e2e8f0;
     --glass-bg: rgba(255, 255, 255, 0.9);
 }
@@ -70,13 +74,13 @@ body {
 }
 
 .nav-link:hover {
-    background: rgba(79, 70, 229, 0.05);
-    color: var(--primary);
+    background: rgba(224, 195, 252, 0.3);
+    color: var(--text-main);
 }
 
 .nav-link.active {
-    background: rgba(79, 70, 229, 0.1);
-    color: var(--primary);
+    background: rgba(224, 195, 252, 0.5);
+    color: var(--text-main);
 }
 
 .main-content {
@@ -237,12 +241,13 @@ body {
 .chat-item .avatar {
     width: 45px;
     height: 45px;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    background: linear-gradient(135deg, var(--accent), var(--primary));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
+    color: var(--text-main);
 }
 
 .chat-item-info {
@@ -307,12 +312,13 @@ body {
 .chat-user-info .avatar {
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    background: linear-gradient(135deg, var(--accent), var(--primary));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    color: var(--text-main);
 }
 
 .chat-user-info h3 {
@@ -424,7 +430,7 @@ body {
 
 .message.assistant .message-content {
     background: var(--accent);
-    color: #ffffff;
+    color: var(--text-main);
     border-bottom-right-radius: 4px;
 }
 
@@ -553,9 +559,9 @@ textarea.form-control {
 }
 
 .tag-badge {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--accent);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: rgba(180, 212, 255, 0.4);
+    color: var(--text-main);
+    border: 1px solid var(--accent);
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -575,7 +581,7 @@ textarea.form-control {
 
 .btn-primary {
     background: var(--accent);
-    color: white;
+    color: var(--text-main);
     justify-content: center;
 }
 
@@ -655,9 +661,9 @@ textarea.form-control {
 }
 
 .filter-chip {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--accent);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: rgba(180, 212, 255, 0.4);
+    color: var(--text-main);
+    border: 1px solid var(--accent);
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.75rem;
@@ -688,16 +694,16 @@ textarea.form-control {
     font-weight: 600;
 }
 
-.status-yeni-müşteri { background: #dbeafe; color: #1e40af; }
-.status-eski-müşteri { background: #f1f5f9; color: #475569; }
-.status-sıcak-müşteri-\(sordu-almadı\) { background: #fef3c7; color: #92400e; }
-.status-sipariş-aşamasında { background: #ede9fe; color: #5b21b6; }
-.status-kargo-bekliyor { background: #fce7f3; color: #9d174d; }
-.status-tamamlandı { background: #d1fae5; color: #065f46; }
+.status-yeni-müşteri { background: var(--accent); color: var(--text-main); }
+.status-eski-müşteri { background: var(--border); color: var(--text-main); }
+.status-sıcak-müşteri-\(sordu-almadı\) { background: var(--warning); color: var(--text-main); }
+.status-sipariş-aşamasında { background: var(--primary); color: var(--text-main); }
+.status-kargo-bekliyor { background: var(--danger); color: var(--text-main); }
+.status-tamamlandı { background: var(--success); color: var(--text-main); }
 
 .tag-badge-mini {
-    background: #e0e7ff;
-    color: #3730a3;
+    background: rgba(224, 195, 252, 0.4);
+    color: var(--text-main);
 }
 
 /* Chat Input Area */
