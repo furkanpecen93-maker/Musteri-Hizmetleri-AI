@@ -9,7 +9,7 @@ const { sendTelegramNotification, sendTelegramReport, setPauseCallback } = requi
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
-const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory, hasUserBeenGreeted: memHasUserBeenGreeted } = require('./services/memory');
+const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory, hasUserBeenGreeted, markUserAsGreeted } = require('./services/memory');
 const { trackEvent, analyzeAndTrack } = require('./services/analytics');
 const { enqueueFollowup, completeFollowup, cancelFollowup, processReminders } = require('./services/followup');
 const { sendDailyReport, generateDailyReport } = require('./services/daily_report');
@@ -44,23 +44,6 @@ Size nasıl yardımcı olabiliriz?`;
 
 const fs = require('fs');
 const path = require('path');
-const greetedUsersFile = path.join(__dirname, 'greeted_users.json');
-let greetedUsers = new Set();
-if (fs.existsSync(greetedUsersFile)) {
-  try {
-    const data = JSON.parse(fs.readFileSync(greetedUsersFile, 'utf8'));
-    greetedUsers = new Set(data);
-  } catch (err) {
-    log.error('greeted_users.json okuma hatası', err);
-  }
-}
-function markUserAsGreeted(senderId) {
-  greetedUsers.add(senderId);
-  fs.writeFileSync(greetedUsersFile, JSON.stringify([...greetedUsers]));
-}
-function hasUserBeenGreeted(senderId) {
-  return greetedUsers.has(senderId);
-}
 
 const app = express();
 
@@ -250,7 +233,7 @@ async function processMessage(senderId, initialMessage, platform) {
     completeFollowup(senderId).catch(() => {});
 
     // Yeni müşteri mi kontrol et (analytics için)
-    const isNewCustomer = !hasUserBeenGreeted(senderId);
+    const isNewCustomer = !(await hasUserBeenGreeted(senderId));
 
     // Analytics: mesaj alındı
     trackEvent(senderId, 'message_received', platform, {
@@ -297,9 +280,9 @@ async function processMessage(senderId, initialMessage, platform) {
       ]);
 
       // İlk mesaj kontrolü ve Karşılama
-      const isFirstMessageEver = !hasUserBeenGreeted(senderId);
+      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
       if (isFirstMessageEver) {
-        markUserAsGreeted(senderId);
+        await markUserAsGreeted(senderId);
         await addMessage(senderId, 'assistant', GREETING_MESSAGE);
         if (platform === 'instagram') {
           await sendInstagramMessage(senderId, GREETING_MESSAGE);
@@ -465,7 +448,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     // Analytics & followup: müşteri mesaj attı
     completeFollowup(senderId).catch(() => {});
-    const isNewCust = !(await memHasUserBeenGreeted(senderId));
+    const isNewCust = !(await hasUserBeenGreeted(senderId));
     trackEvent(senderId, 'message_received', 'whatsapp', { message_length: messageText.length, is_new_customer: isNewCust }).catch(() => {});
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
@@ -574,7 +557,7 @@ app.post('/webhook/manychat', async (req, res) => {
 
     // Analytics & followup: müşteri mesaj attı
     completeFollowup(senderId).catch(() => {});
-    const isNewMc = !(await memHasUserBeenGreeted(senderId));
+    const isNewMc = !(await hasUserBeenGreeted(senderId));
     trackEvent(senderId, 'message_received', channelType, { message_length: messageText.length, is_new_customer: isNewMc }).catch(() => {});
 
     // Mesajı kuyruğa al veya işle
@@ -726,7 +709,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     // Analytics & followup: müşteri mesaj attı
     completeFollowup(senderId).catch(() => {});
-    const isNewAr = !(await memHasUserBeenGreeted(senderId));
+    const isNewAr = !(await hasUserBeenGreeted(senderId));
     trackEvent(senderId, 'message_received', 'whatsapp', { message_length: messageText.length, is_new_customer: isNewAr }).catch(() => {});
 
     const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
