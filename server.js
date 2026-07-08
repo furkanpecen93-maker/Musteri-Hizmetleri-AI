@@ -755,6 +755,15 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       return res.status(400).json({ reply: '', replies: [] });
     }
 
+    log.info('[autoresponder] RAW DEBUG', {
+      method: req.method,
+      queryKeys: Object.keys(req.query),
+      bodyType: typeof req.body,
+      bodyKeys: typeof req.body === 'object' ? Object.keys(req.body) : 'string',
+      rawBody: typeof req.body === 'string' ? req.body.substring(0, 300) : JSON.stringify(req.body).substring(0, 300),
+      senderId,
+      messageText: messageText.substring(0, 50)
+    });
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
 
