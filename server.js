@@ -900,6 +900,71 @@ app.post('/api/crm/pause/:senderId', (req, res) => {
   }
 });
 
+app.post('/api/crm/messages/:senderId', express.json(), async (req, res) => {
+  const senderId = req.params.senderId;
+  const { text } = req.body;
+  
+  if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Mesaj boş olamaz.' });
+  }
+
+  try {
+      // Platform tespiti yap
+      const { data, error } = await crmSupabase
+          .from('customer_events')
+          .select('platform')
+          .eq('sender_id', senderId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+      let platform = 'instagram'; // Fallback
+      if (data && data.length > 0 && data[0].platform) {
+          platform = data[0].platform;
+      } else {
+          // Alternatif: Followup kuyruğuna bak
+          const { data: fData } = await crmSupabase
+            .from('followup_queue')
+            .select('platform')
+            .eq('sender_id', senderId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (fData && fData.length > 0 && fData[0].platform) {
+              platform = fData[0].platform;
+          }
+      }
+
+      if (platform === 'whatsapp') {
+          return res.status(400).json({ error: 'WhatsApp için manuel gönderim desteklenmemektedir (AutoResponder kısıtlaması). Lütfen telefondan yanıtlayınız.' });
+      }
+
+      let success = false;
+      if (platform === 'instagram') {
+          success = await sendInstagramMessage(senderId, text);
+      } else if (platform === 'messenger') {
+          success = await sendMessengerMessage(senderId, text);
+      } else {
+          // Bilinmiyorsa önce insta, sonra messenger dene
+          success = await sendInstagramMessage(senderId, text);
+          if (!success) {
+              success = await sendMessengerMessage(senderId, text);
+          }
+      }
+
+      if (!success) {
+          return res.status(500).json({ error: 'Mesaj Meta API üzerinden gönderilemedi. Müşterinin son mesajının üzerinden 24 saat geçmiş olabilir.' });
+      }
+
+      // Veritabanına kaydet ve botu sustur
+      await addMessage(senderId, 'assistant', text);
+      pauseBotForSender(senderId, 'CRM üzerinden manuel yanıt');
+      
+      res.json({ success: true, platform });
+  } catch (err) {
+      log.error('[crm] Send message error', err);
+      res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/crm/profile/:senderId', async (req, res) => {
   try {
     const { data, error } = await crmSupabase

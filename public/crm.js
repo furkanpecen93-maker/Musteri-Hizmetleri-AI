@@ -109,6 +109,7 @@ async function selectChat(senderId) {
     
     updateHeaderStatus();
     document.getElementById('profile-sidebar').style.display = 'flex';
+    document.getElementById('chat-input-area').style.display = 'flex';
     fetchProfile(senderId);
     await fetchMessages();
     
@@ -338,3 +339,68 @@ saveProfileBtn.addEventListener('click', async () => {
 // Start
 fetchChats();
 setInterval(fetchChats, 10000); // Sync chat list every 10s
+
+// Send Message Logic
+const chatInputEl = document.getElementById('chat-input');
+const sendMsgBtnEl = document.getElementById('send-msg-btn');
+
+async function sendManualMessage() {
+    if (!currentSelectedSenderId) return;
+    const text = chatInputEl.value.trim();
+    if (!text) return;
+    
+    // Optimistic UI update
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message assistant';
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    msgEl.innerHTML = `
+        <div class="message-content">${text.replace(/\n/g, '<br>')}</div>
+        <div class="message-time">${timeString} <i class="fa-regular fa-clock" style="font-size: 0.7rem; margin-left: 3px;"></i></div>
+    `;
+    chatMessagesEl.appendChild(msgEl);
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    
+    chatInputEl.value = '';
+    chatInputEl.disabled = true;
+    sendMsgBtnEl.disabled = true;
+    sendMsgBtnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    
+    try {
+        const response = await fetch(`/api/crm/messages/${currentSelectedSenderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Bilinmeyen hata');
+        }
+        
+        // Success
+        msgEl.querySelector('.fa-clock').className = 'fa-solid fa-check';
+        
+        // Update takeover status locally
+        activeTakeovers[currentSelectedSenderId] = true;
+        updateHeaderStatus();
+        renderChatList();
+        
+    } catch (err) {
+        console.error('Send message error:', err);
+        msgEl.querySelector('.fa-clock').className = 'fa-solid fa-triangle-exclamation';
+        msgEl.querySelector('.fa-clock').style.color = 'var(--danger)';
+        alert('Hata: ' + err.message);
+    } finally {
+        chatInputEl.disabled = false;
+        sendMsgBtnEl.disabled = false;
+        sendMsgBtnEl.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+        chatInputEl.focus();
+    }
+}
+
+sendMsgBtnEl.onclick = sendManualMessage;
+chatInputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendManualMessage();
+    }
+});
