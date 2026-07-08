@@ -125,9 +125,9 @@ app.get('/webhook', (req, res) => {
 
 // Per-sender processing lock (burst coalesce)
 const processingLock = new Map();
-const COALESCE_INITIAL_MS = 7000;
-const COALESCE_STRAGGLER_MS = 3000;
-const COALESCE_MAX_ITER = 4;
+const COALESCE_INITIAL_MS = 10000;
+const COALESCE_STRAGGLER_MS = 5000;
+const COALESCE_MAX_ITER = 6;
 
 // ── İnsan Devralma (Human Takeover) Sistemi ──
 // İnsan ekip bir müşteriye yazdığında bot 15 dk susar
@@ -695,6 +695,17 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     // Clean [test] from sender
     senderId = senderId.replace(/\[test\]/g, '');
+
+    // Grup mesajlarını engelle (isGroup bayrağı veya ID'de '@g.us' / '-' / 'group' kontrolü)
+    const isGroupAr = parsedBody.isGroup || arQuery.isGroup 
+      || String(senderId).includes('@g.us') 
+      || String(senderId).includes('group')
+      || (String(senderId).match(/-/) && String(senderId).length > 15);
+    if (isGroupAr) {
+      log.info('[autoresponder] Grup mesajı atlanıyor', { senderId });
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ reply: '', replies: [] });
+    }
 
     res.set('Content-Type', 'text/plain; charset=utf-8');
 
