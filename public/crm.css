@@ -1,16 +1,25 @@
 :root {
     --bg-dark: #f8fafc;
     --bg-panel: #ffffff;
-    --bg-body: #fafcfd;
+    --bg-body: #fcfbfa;
     --text-main: #334155;
     --text-muted: #64748b;
-    --accent: #b4d4ff;
-    --accent-hover: #9ac0ff;
-    --primary: #e0c3fc;
-    --success: #d0f4de;
-    --danger: #ffc8dd;
-    --warning: #fcf1b6;
-    --info: #cbf0f8;
+    
+    --mustard: #DDA143;
+    --sunset: #E4A68C;
+    --terracotta: #D97E65;
+    --rust: #824332;
+    --sage: #A1AA8F;
+    --olive: #5D6131;
+
+    --accent: var(--sage);
+    --accent-hover: #8e967a;
+    --primary: var(--terracotta);
+    --success: var(--sage);
+    --danger: var(--rust);
+    --warning: var(--mustard);
+    --info: var(--sunset);
+    
     --border: #e2e8f0;
     --glass-bg: rgba(255, 255, 255, 0.9);
 }
@@ -74,12 +83,12 @@ body {
 }
 
 .nav-link:hover {
-    background: rgba(224, 195, 252, 0.3);
+    background: rgba(161, 170, 143, 0.2);
     color: var(--text-main);
 }
 
 .nav-link.active {
-    background: rgba(224, 195, 252, 0.5);
+    background: rgba(161, 170, 143, 0.4);
     color: var(--text-main);
 }
 
@@ -559,7 +568,7 @@ textarea.form-control {
 }
 
 .tag-badge {
-    background: rgba(180, 212, 255, 0.4);
+    background: rgba(161, 170, 143, 0.4);
     color: var(--text-main);
     border: 1px solid var(--accent);
     padding: 4px 10px;
@@ -661,7 +670,7 @@ textarea.form-control {
 }
 
 .filter-chip {
-    background: rgba(180, 212, 255, 0.4);
+    background: rgba(161, 170, 143, 0.4);
     color: var(--text-main);
     border: 1px solid var(--accent);
     padding: 4px 8px;
@@ -694,16 +703,16 @@ textarea.form-control {
     font-weight: 600;
 }
 
-.status-yeni-müşteri { background: var(--accent); color: var(--text-main); }
-.status-eski-müşteri { background: var(--border); color: var(--text-main); }
-.status-sıcak-müşteri-\(sordu-almadı\) { background: var(--warning); color: var(--text-main); }
-.status-sipariş-aşamasında { background: var(--primary); color: var(--text-main); }
-.status-kargo-bekliyor { background: var(--danger); color: var(--text-main); }
-.status-tamamlandı { background: var(--success); color: var(--text-main); }
+.status-yeni-müşteri { background: var(--mustard); color: #fff; border: none; }
+.status-eski-müşteri { background: var(--olive); color: #fff; border: none; }
+.status-sıcak-müşteri-\(sordu-almadı\) { background: var(--sunset); color: #fff; border: none; }
+.status-sipariş-aşamasında { background: var(--terracotta); color: #fff; border: none; }
+.status-kargo-bekliyor { background: var(--rust); color: #fff; border: none; }
+.status-tamamlandı { background: var(--sage); color: #fff; border: none; }
 
 .tag-badge-mini {
-    background: rgba(224, 195, 252, 0.4);
-    color: var(--text-main);
+    background: rgba(217, 126, 101, 0.2);
+    color: var(--terracotta);
 }
 
 /* Chat Input Area */
@@ -771,13 +780,27 @@ textarea.form-control {
 .portal-btn i {
     font-size: 2.5rem;
     color: var(--primary);
+    transition: all 0.3s;
 }
 .portal-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(79, 70, 229, 0.1);
-    border-color: var(--primary);
-    color: var(--primary);
 }
+/* Earthy colors for each portal button */
+.portal-btn:nth-child(1) i { color: var(--mustard); }
+.portal-btn:nth-child(1):hover { border-color: var(--mustard); color: var(--mustard); box-shadow: 0 8px 15px rgba(221, 161, 67, 0.2); }
+.portal-btn:nth-child(1):hover i { color: var(--mustard); }
+
+.portal-btn:nth-child(2) i { color: var(--terracotta); }
+.portal-btn:nth-child(2):hover { border-color: var(--terracotta); color: var(--terracotta); box-shadow: 0 8px 15px rgba(217, 126, 101, 0.2); }
+.portal-btn:nth-child(2):hover i { color: var(--terracotta); }
+
+.portal-btn:nth-child(3) i { color: var(--olive); }
+.portal-btn:nth-child(3):hover { border-color: var(--olive); color: var(--olive); box-shadow: 0 8px 15px rgba(93, 97, 49, 0.2); }
+.portal-btn:nth-child(3):hover i { color: var(--olive); }
+
+.portal-btn:nth-child(4) i { color: var(--sage); }
+.portal-btn:nth-child(4):hover { border-color: var(--sage); color: var(--sage); box-shadow: 0 8px 15px rgba(161, 170, 143, 0.2); }
+.portal-btn:nth-child(4):hover i { color: var(--sage); }
 
 .back-btn {
     background: transparent;
