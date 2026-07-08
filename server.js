@@ -458,6 +458,14 @@ app.post('/webhook/whatsapp', async (req, res) => {
       return res.json({ reply: '', replies: [] });
     }
 
+    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    const existingWaLock = processingLock.get(senderId);
+    if (existingWaLock) {
+      existingWaLock.queue.push(messageText);
+      log.info(`[whatsapp] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingWaLock.queue.length });
+      return res.json({ reply: '', replies: [] });
+    }
+
     // Duplicate kontrolü
     if (await isDuplicate(senderId, messageText)) {
       return res.json({ reply: '', replies: [] });
@@ -555,6 +563,17 @@ app.post('/webhook/manychat', async (req, res) => {
     // İnsan devralma kontrolü
     if (isBotPaused(senderId)) {
       log.info(`[takeover] Bot duraklatılmış, ManyChat mesajı atlanıyor`, { senderId, platform: channelType });
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages: [] }
+      });
+    }
+
+    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    const existingMcLock = processingLock.get(senderId);
+    if (existingMcLock) {
+      existingMcLock.queue.push(messageText);
+      log.info(`[manychat] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingMcLock.queue.length });
       return res.json({
         version: "v2",
         content: { type: channelType, messages: [] }
@@ -707,21 +726,30 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       return res.json({ reply: '', replies: [] });
     }
 
-    res.set('Content-Type', 'text/plain; charset=utf-8');
-
     if (!messageText) {
       log.warn('[autoresponder] Mesaj boş geldi. Payload incelemesi:', {
         rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
         query: req.query,
         parsedBody
       });
-      return res.status(400).send('Message is required');
+      return res.status(400).json({ reply: '', replies: [] });
     }
 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
+    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    // Bu sayede 2. ve 3. mesajlar hiç beklemeden kuyruğa girer
+    const existingLock = processingLock.get(senderId);
+    if (existingLock) {
+      existingLock.queue.push(messageText);
+      log.info(`[autoresponder] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingLock.queue.length });
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ reply: '', replies: [] });
+    }
+
     if (await isDuplicate(senderId, messageText)) {
-      return res.send('');
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ reply: '', replies: [] });
     }
 
     // Analytics & followup: müşteri mesaj attı
@@ -774,7 +802,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     if (aiResponse === null) {
       res.set('Content-Type', 'application/json; charset=utf-8');
-      return res.json({ replies: [] });
+      return res.json({ reply: '', replies: [] });
     }
 
     log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
