@@ -1,4 +1,4 @@
-﻿let activeChats = [];
+let activeChats = [];
 let activeTakeovers = {};
 let currentSelectedSenderId = null;
 let messagesPollingInterval = null;
@@ -455,12 +455,12 @@ function renderCustomersList() {
         const priority = chat.profile ? chat.profile.priority : 'Normal';
         const timeString = new Date(chat.timestamp).toLocaleString('tr-TR');
         
-        tr.innerHTML = \
-            <td style="padding: 15px;">\</td>
-            <td style="padding: 15px;"><span class="mini-badge status-\">\</span></td>
-            <td style="padding: 15px;">\</td>
-            <td style="padding: 15px;">\</td>
-        \;
+        tr.innerHTML = `
+            <td style="padding: 15px;">${chat.sender_id}</td>
+            <td style="padding: 15px;"><span class="mini-badge status-${status.replace(/\\s+/g, '-').toLowerCase()}">${status}</span></td>
+            <td style="padding: 15px;">${priority}</td>
+            <td style="padding: 15px;">${timeString}</td>
+        `;
         tbody.appendChild(tr);
     });
 }
