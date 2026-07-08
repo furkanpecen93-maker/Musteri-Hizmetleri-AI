@@ -1079,16 +1079,19 @@ app.get('/api/crm/ai-analyze/:senderId', async (req, res) => {
     // Son 20 mesaja göre analiz et
     const chatText = history.slice(-20).map(m => `${m.role === 'user' ? 'Müşteri' : 'Bot'}: ${m.content}`).join('\n');
 
-    const prompt = `Aşağıdaki konuşma geçmişine bakarak müşterinin mevcut durumunu ve önceliğini analiz et.
+    const prompt = `Aşağıdaki konuşma geçmişine bakarak müşterinin mevcut durumunu, önceliğini, yaşadığı şehri ve satış şeklini analiz et.
 
 Konuşma Geçmişi:
 ${chatText}
 
-Geçerli Durumlar (status): "Yeni Müşteri", "Eski Müşteri", "Sıcak Müşteri (Sordu Almadı)", "Sipariş Aşamasında", "Kargo Bekliyor", "Tamamlandı"
-Geçerli Öncelikler (priority): "Düşük", "Normal", "Orta", "Yüksek"
+Kurallar:
+- status: "Yeni Müşteri", "Eski Müşteri", "Sıcak Müşteri (Sordu Almadı)", "Sipariş Aşamasında", "Kargo Bekliyor", "Tamamlandı"
+- priority: "Düşük", "Normal", "Orta", "Yüksek"
+- city: Müşteri konuşmada bir şehir ismi verdiyse (Örn: Elazığ, İstanbul) onu yaz. Eğer şehir bilgisi yoksa boş bırak ("").
+- sales_type: "Toptan", "Perakende", "Fason", "Bilinmiyor"
 
 Sadece saf JSON formatında cevap dön. Markdown kullanma:
-{"status": "...", "priority": "..."}`;
+{"status": "...", "priority": "...", "city": "...", "sales_type": "..."}`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`;
     

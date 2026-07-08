@@ -256,6 +256,8 @@ function renderActiveFilters() {
 
 const profileStatusEl = document.getElementById('profile-status');
 const profilePriorityEl = document.getElementById('profile-priority');
+const profileCityEl = document.getElementById('profile-city');
+const profileSalesTypeEl = document.getElementById('profile-sales-type');
 const tagInputEl = document.getElementById('tag-input');
 const tagsListEl = document.getElementById('tags-list');
 const profileNotesEl = document.getElementById('profile-notes');
@@ -266,9 +268,21 @@ async function fetchProfile(senderId) {
         const response = await fetch(`/api/crm/profile/${senderId}`);
         const data = await response.json();
         
-        currentTags = data.tags || [];
+        let otherTags = [];
+        let foundCity = '';
+        let foundSalesType = 'Bilinmiyor';
+        
+        (data.tags || []).forEach(t => {
+            if(t.startsWith('Şehir: ')) foundCity = t.replace('Şehir: ', '');
+            else if(t.startsWith('Satış: ')) foundSalesType = t.replace('Satış: ', '');
+            else otherTags.push(t);
+        });
+        
+        currentTags = otherTags;
         profileStatusEl.value = data.status || 'Yeni';
         profilePriorityEl.value = data.priority || 'Normal';
+        if(profileCityEl) profileCityEl.value = foundCity;
+        if(profileSalesTypeEl) profileSalesTypeEl.value = foundSalesType;
         profileNotesEl.value = data.notes || '';
         
         renderTags();
@@ -312,13 +326,21 @@ saveProfileBtn.addEventListener('click', async () => {
     saveProfileBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
     
     try {
+        let finalTags = [...currentTags];
+        if (profileCityEl && profileCityEl.value.trim()) {
+            finalTags.push(`Şehir: ${profileCityEl.value.trim()}`);
+        }
+        if (profileSalesTypeEl && profileSalesTypeEl.value !== 'Bilinmiyor') {
+            finalTags.push(`Satış: ${profileSalesTypeEl.value}`);
+        }
+
         await fetch(`/api/crm/profile/${currentSelectedSenderId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 status: profileStatusEl.value,
                 priority: profilePriorityEl.value,
-                tags: currentTags,
+                tags: finalTags,
                 notes: profileNotesEl.value
             })
         });
@@ -548,6 +570,11 @@ window.analyzeProfileWithAI = async function() {
         
         if (data.status) document.getElementById('profile-status').value = data.status;
         if (data.priority) document.getElementById('profile-priority').value = data.priority;
+        
+        const cEl = document.getElementById('profile-city');
+        const sEl = document.getElementById('profile-sales-type');
+        if (cEl && data.city !== undefined) cEl.value = data.city;
+        if (sEl && data.sales_type) sEl.value = data.sales_type;
         
         // Auto-save the new profile info
         saveProfileBtn.click();
