@@ -98,7 +98,7 @@ app.get('/katalog', (req, res) => {
 });
 
 // Health check endpoint for monitoring (GitHub Actions)
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok', time: new Date().toISOString(), version: '2026-07-05-21-06' }));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', time: new Date().toISOString(), version: '2026-07-08-debounce-cooldown' }));
 
 // ══════════════════════════════════════════════
 // 1. META WEBHOOK VERIFICATION (GET)
