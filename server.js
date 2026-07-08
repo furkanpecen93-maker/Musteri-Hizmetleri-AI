@@ -133,9 +133,9 @@ const COALESCE_INITIAL_MS = 10000;
 const COALESCE_STRAGGLER_MS = 5000;
 const COALESCE_MAX_ITER = 6;
 
-const DEBOUNCE_WINDOW_MS = 15000;  // 15 saniye içinde gelen mesajlar biriktirilir
-const DEBOUNCE_WAIT_MS = 8000;     // Son mesajdan 8 saniye geçince birleştirilmiş cevap üret
-const messageAccumulator = new Map(); // senderId → { messages: [], lastMessageTime: number, timer: null, resolvePromise: null }
+const DEBOUNCE_WINDOW_MS = 8000;   // 8 saniye içinde gelen mesajlar biriktirilir
+const DEBOUNCE_WAIT_MS = 5000;     // İlk mesajdan 5 saniye sonra birleştirilmiş cevap üret
+const messageAccumulator = new Map(); // senderId → { messages: [], lastMessageTime: number }
 
 // ── İnsan Devralma (Human Takeover) Sistemi ──
 // İnsan ekip bir müşteriye yazdığında bot 15 dk susar
@@ -757,35 +757,36 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
-    // Duplicate kontrolü
-    if (await isDuplicate(senderId, messageText)) {
-      res.set('Content-Type', 'application/json; charset=utf-8');
-      return res.json({ reply: '', replies: [] });
-    }
 
     // ── DEBOUNCE MESAJ BİRİKTİRME ──
-    // Son DEBOUNCE_WINDOW_MS içinde bu göndericiden başka mesaj gelmiş mi?
+    // Accumulator'ı isDuplicate'den ÖNCE kur!
+    // Paralel gelen isteklerde 2. istek 1.'nin accumulator'ını görmeli.
     const now = Date.now();
-    const accumulator = messageAccumulator.get(senderId);
-    
-    if (accumulator && (now - accumulator.lastMessageTime) < DEBOUNCE_WINDOW_MS) {
-      // Yakın zamanda mesaj var — bu mesajı biriktir, boş cevap dön
-      accumulator.messages.push(messageText);
-      accumulator.lastMessageTime = now;
-      log.info(`[autoresponder] Mesaj biriktirildi (debounce)`, { 
-        senderId, 
-        queueLen: accumulator.messages.length,
-        timeSinceLastMs: now - accumulator.lastMessageTime 
+    const existingAccumulator = messageAccumulator.get(senderId);
+
+    if (existingAccumulator && (now - existingAccumulator.lastMessageTime) < DEBOUNCE_WINDOW_MS) {
+      // Aktif birikim var ve pencere içinde — kuyruğa ekle, boş dön
+      existingAccumulator.messages.push(messageText);
+      existingAccumulator.lastMessageTime = now;
+      log.info(`[autoresponder] Mesaj biriktirildi (debounce)`, {
+        senderId,
+        queueLen: existingAccumulator.messages.length
       });
       res.set('Content-Type', 'application/json; charset=utf-8');
       return res.json({ reply: '', replies: [] });
     }
 
     // İlk mesaj veya debounce penceresi dolmuş — yeni birikim başlat
-    messageAccumulator.set(senderId, {
-      messages: [messageText],
-      lastMessageTime: now
-    });
+    log.info('[autoresponder] Yeni accumulator kuruldu', { senderId, msg: messageText.substring(0, 30), ts: now });
+    const newAccumulator = { messages: [messageText], lastMessageTime: now };
+    messageAccumulator.set(senderId, newAccumulator);
+
+    // Duplicate kontrolü (accumulator zaten kuruldu, parallel istek kuyruğa girecek)
+    if (await isDuplicate(senderId, messageText)) {
+      messageAccumulator.delete(senderId);
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ reply: '', replies: [] });
+    }
 
     // DEBOUNCE_WAIT_MS bekle — bu sürede yeni mesaj gelirse biriktirilecek
     await sleep(DEBOUNCE_WAIT_MS);
