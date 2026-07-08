@@ -39,3 +39,19 @@ ALTER TABLE followup_queue ENABLE ROW LEVEL SECURITY;
 -- Tüm işlemlere izin ver (service key veya anon key)
 CREATE POLICY "Allow all on customer_events" ON customer_events FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on followup_queue" ON followup_queue FOR ALL USING (true) WITH CHECK (true);
+
+-- 3. customer_profiles — CRM Profil ve Etiketleme
+CREATE TABLE IF NOT EXISTS customer_profiles (
+  sender_id TEXT PRIMARY KEY,
+  tags TEXT[] DEFAULT '{}',
+  priority TEXT DEFAULT 'Normal',
+  status TEXT DEFAULT 'Yeni',
+  notes TEXT DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_status ON customer_profiles(status);
+CREATE INDEX IF NOT EXISTS idx_profiles_priority ON customer_profiles(priority);
+
+ALTER TABLE customer_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on customer_profiles" ON customer_profiles FOR ALL USING (true) WITH CHECK (true);

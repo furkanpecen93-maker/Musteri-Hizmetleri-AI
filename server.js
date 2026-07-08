@@ -878,6 +878,54 @@ app.post('/api/crm/pause/:senderId', (req, res) => {
   }
 });
 
+app.get('/api/crm/profile/:senderId', async (req, res) => {
+  try {
+    const { data, error } = await crmSupabase
+      .from('customer_profiles')
+      .select('*')
+      .eq('sender_id', req.params.senderId)
+      .single();
+    
+    // If not found, return default empty profile
+    if (error && error.code === 'PGRST116') {
+      return res.json({ sender_id: req.params.senderId, tags: [], notes: '', status: 'Yeni', priority: 'Normal' });
+    }
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/crm/profile/:senderId', async (req, res) => {
+  try {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) { body = {}; }
+    }
+    const tags = Array.isArray(body.tags) ? body.tags : [];
+    const notes = body.notes || '';
+    const status = body.status || 'Yeni';
+    const priority = body.priority || 'Normal';
+
+    const { data, error } = await crmSupabase
+      .from('customer_profiles')
+      .upsert({
+        sender_id: req.params.senderId,
+        tags,
+        notes,
+        status,
+        priority,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'sender_id' });
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Bot'u belirli bir müşteri için durdur (WhatsApp veya herhangi bir platform)
 app.post('/admin/takeover', (req, res) => {

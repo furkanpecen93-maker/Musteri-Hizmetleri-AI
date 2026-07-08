@@ -55,6 +55,54 @@
                 </div>
             </div>
         </main>
+
+        <!-- Right Profile Sidebar -->
+        <aside class="profile-sidebar" id="profile-sidebar" style="display: none;">
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-address-card"></i> Müşteri Profili</h2>
+            </div>
+            
+            <div class="profile-content">
+                <div class="form-group">
+                    <label>Durum</label>
+                    <select id="profile-status" class="form-control">
+                        <option value="Yeni">Yeni</option>
+                        <option value="Sipariş Aşamasında">Sipariş Aşamasında</option>
+                        <option value="Kargo Bekliyor">Kargo Bekliyor</option>
+                        <option value="Tamamlandı">Tamamlandı</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Öncelik</label>
+                    <select id="profile-priority" class="form-control">
+                        <option value="Yüksek">Yüksek</option>
+                        <option value="Orta">Orta</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Düşük">Düşük</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Etiketler</label>
+                    <div class="tags-input-container">
+                        <input type="text" id="tag-input" placeholder="Etiket yazıp Enter'a basın...">
+                    </div>
+                    <div class="tags-list" id="tags-list">
+                        <!-- Tags will be injected here -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Özel Notlar</label>
+                    <textarea id="profile-notes" class="form-control" placeholder="Müşteri ile ilgili notlar..."></textarea>
+                </div>
+
+                <button id="save-profile-btn" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-save"></i> Kaydet
+                </button>
+            </div>
+        </aside>
     </div>
 
     <script src="crm.js"></script>

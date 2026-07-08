@@ -77,6 +77,8 @@ async function selectChat(senderId) {
     document.querySelector('.app-container').classList.add('mobile-chat-active');
     
     updateHeaderStatus();
+    document.getElementById('profile-sidebar').style.display = 'flex';
+    fetchProfile(senderId);
     await fetchMessages();
     
     if (messagesPollingInterval) clearInterval(messagesPollingInterval);
@@ -178,6 +180,90 @@ togglePauseBtn.onclick = async () => {
 };
 
 searchInput.addEventListener('input', renderChatList);
+
+// Profile Logic
+let currentTags = [];
+const profileStatusEl = document.getElementById('profile-status');
+const profilePriorityEl = document.getElementById('profile-priority');
+const tagInputEl = document.getElementById('tag-input');
+const tagsListEl = document.getElementById('tags-list');
+const profileNotesEl = document.getElementById('profile-notes');
+const saveProfileBtn = document.getElementById('save-profile-btn');
+
+async function fetchProfile(senderId) {
+    try {
+        const response = await fetch(`/api/crm/profile/${senderId}`);
+        const data = await response.json();
+        
+        currentTags = data.tags || [];
+        profileStatusEl.value = data.status || 'Yeni';
+        profilePriorityEl.value = data.priority || 'Normal';
+        profileNotesEl.value = data.notes || '';
+        
+        renderTags();
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        currentTags = [];
+        renderTags();
+    }
+}
+
+function renderTags() {
+    tagsListEl.innerHTML = '';
+    currentTags.forEach(tag => {
+        const badge = document.createElement('div');
+        badge.className = 'tag-badge';
+        badge.innerHTML = `<span>${tag}</span> <i class="fa-solid fa-xmark" onclick="removeTag('${tag}')"></i>`;
+        tagsListEl.appendChild(badge);
+    });
+}
+
+window.removeTag = function(tagToRemove) {
+    currentTags = currentTags.filter(tag => tag !== tagToRemove);
+    renderTags();
+};
+
+tagInputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        const newTag = tagInputEl.value.trim();
+        if (newTag && !currentTags.includes(newTag)) {
+            currentTags.push(newTag);
+            renderTags();
+        }
+        tagInputEl.value = '';
+    }
+});
+
+saveProfileBtn.addEventListener('click', async () => {
+    if (!currentSelectedSenderId) return;
+    
+    const originalText = saveProfileBtn.innerHTML;
+    saveProfileBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    try {
+        await fetch(`/api/crm/profile/${currentSelectedSenderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                status: profileStatusEl.value,
+                priority: profilePriorityEl.value,
+                tags: currentTags,
+                notes: profileNotesEl.value
+            })
+        });
+        
+        saveProfileBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+        setTimeout(() => {
+            saveProfileBtn.innerHTML = originalText;
+        }, 2000);
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        saveProfileBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Hata';
+        setTimeout(() => {
+            saveProfileBtn.innerHTML = originalText;
+        }, 2000);
+    }
+});
 
 // Start
 fetchChats();
