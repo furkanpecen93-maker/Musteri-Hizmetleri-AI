@@ -1065,7 +1065,7 @@ app.get('/api/crm/ai-analyze/:senderId', async (req, res) => {
   try {
     const senderId = req.params.senderId;
     const { getHistory } = require('./services/memory');
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const fetch = require('node-fetch');
     
     if (!config.geminiApiKey) {
         return res.status(500).json({ error: 'Gemini API anahtarı ayarlanmamış.' });
@@ -1075,9 +1075,6 @@ app.get('/api/crm/ai-analyze/:senderId', async (req, res) => {
     if (!history || history.length === 0) {
         return res.json({ status: 'Yeni Müşteri', priority: 'Normal' });
     }
-
-    const genAI = new GoogleGenerativeAI(config.geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Son 20 mesaja göre analiz et
     const chatText = history.slice(-20).map(m => `${m.role === 'user' ? 'Müşteri' : 'Bot'}: ${m.content}`).join('\n');
@@ -1093,15 +1090,31 @@ Geçerli Öncelikler (priority): "Düşük", "Normal", "Orta", "Yüksek"
 Sadece saf JSON formatında cevap dön. Markdown kullanma:
 {"status": "...", "priority": "..."}`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.geminiApiKey}`;
     
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.1 }
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error('Gemini API Error: ' + errorText);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         res.json(parsed);
     } else {
-        throw new Error('AI geçerli bir JSON dönmedi.');
+        throw new Error('AI geçerli bir JSON dönmedi: ' + text);
     }
   } catch (err) {
     log.error('[crm] AI Analysis Hatası:', err);
