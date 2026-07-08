@@ -1,4 +1,4 @@
-let activeChats = [];
+﻿let activeChats = [];
 let activeTakeovers = {};
 let currentSelectedSenderId = null;
 let messagesPollingInterval = null;
@@ -58,7 +58,7 @@ function renderChatList() {
     chatListEl.innerHTML = '';
 
     if (filteredChats.length === 0) {
-        chatListEl.innerHTML = '<div class="loading-spinner">Sohbet bulunamadı.</div>';
+        chatListEl.innerHTML = '<div class="loading-spinner">Sohbet bulunamadÄ±.</div>';
         return;
     }
 
@@ -92,7 +92,7 @@ function renderChatList() {
                     <span class="chat-time">${timeString}</span>
                 </div>
                 <div class="chat-item-badges">${profileBadgesHTML}</div>
-                <div class="chat-preview">${isPaused ? '⏸️ (Susturuldu) ' : ''}${chat.role === 'assistant' ? 'AI: ' : ''}${chat.content}</div>
+                <div class="chat-preview">${isPaused ? 'â¸ï¸ (Susturuldu) ' : ''}${chat.role === 'assistant' ? 'AI: ' : ''}${chat.content}</div>
             </div>
         `;
         chatListEl.appendChild(chatItem);
@@ -104,7 +104,7 @@ async function selectChat(senderId) {
     currentChatNameEl.textContent = senderId;
     chatHeaderEl.style.display = 'flex';
     
-    // Mobil için class ekle
+    // Mobil iÃ§in class ekle
     document.querySelector('.app-container').classList.add('mobile-chat-active');
     
     updateHeaderStatus();
@@ -133,7 +133,7 @@ function updateHeaderStatus() {
         botStatusTextEl.textContent = 'Bot Susturuldu';
         botStatusTextEl.className = 'status offline';
         togglePauseBtn.className = 'btn btn-resume';
-        togglePauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Botu Aktifleştir';
+        togglePauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Botu AktifleÅŸtir';
     } else {
         botStatusTextEl.textContent = 'Bot Aktif';
         botStatusTextEl.className = 'status online';
@@ -164,7 +164,7 @@ function renderMessages(messages) {
         chatMessagesEl.innerHTML = `
             <div class="empty-state">
                 <i class="fa-solid fa-comments"></i>
-                <p>Mesaj bulunamadı.</p>
+                <p>Mesaj bulunamadÄ±.</p>
             </div>
         `;
         return;
@@ -451,7 +451,7 @@ function renderCustomersList() {
     Object.values(uniqueSenders).forEach(chat => {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid var(--border)';
-        const status = chat.profile ? chat.profile.status : 'Yeni M��teri';
+        const status = chat.profile ? chat.profile.status : 'Yeni Müşteri';
         const priority = chat.profile ? chat.profile.priority : 'Normal';
         const timeString = new Date(chat.timestamp).toLocaleString('tr-TR');
         
