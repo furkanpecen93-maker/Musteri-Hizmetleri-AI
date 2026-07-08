@@ -820,27 +820,78 @@ const crmSupabase = createClient(config.supabaseUrl, config.supabaseKey);
 
 app.get('/api/crm/dashboard', async (req, res) => {
   try {
-    // Toplam ciro
-    const { data: orders } = await crmSupabase.from('orders').select('amount');
-    const totalRevenue = orders ? orders.reduce((sum, o) => sum + Number(o.amount), 0) : 0;
+    const now = new Date();
     
-    // Toplam müşteri
+    // Start of Day, Week, Month
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1)).toISOString();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    // Fetch all orders to calculate revenue
+    const { data: orders } = await crmSupabase.from('orders').select('amount, created_at');
+    let totalRevenue = 0, dailyRev = 0, weeklyRev = 0, monthlyRev = 0;
+    
+    if (orders) {
+      orders.forEach(o => {
+        const amt = Number(o.amount) || 0;
+        totalRevenue += amt;
+        if (o.created_at >= startOfDay) dailyRev += amt;
+        if (o.created_at >= startOfWeek) weeklyRev += amt;
+        if (o.created_at >= startOfMonth) monthlyRev += amt;
+      });
+    }
+
+    // Fetch message counts
+    const { count: dailyMsgs } = await crmSupabase.from('conversations').select('*', { count: 'exact', head: true }).gte('timestamp', startOfDay);
+    const { count: weeklyMsgs } = await crmSupabase.from('conversations').select('*', { count: 'exact', head: true }).gte('timestamp', startOfWeek);
+    const { count: monthlyMsgs } = await crmSupabase.from('conversations').select('*', { count: 'exact', head: true }).gte('timestamp', startOfMonth);
+
     const { count: totalCustomers } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true });
-    
-    // Sıcak müşteri
     const { count: hotCustomers } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true }).eq('status', 'Sıcak Müşteri (Sordu Almadı)');
-    
-    // Bekleyen sipariş
     const { count: pendingOrders } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true }).eq('status', 'Sipariş Aşamasında');
     
     res.json({
       totalRevenue,
       totalCustomers: totalCustomers || 0,
       hotCustomers: hotCustomers || 0,
-      pendingOrders: pendingOrders || 0
+      pendingOrders: pendingOrders || 0,
+      reports: {
+        daily: { rev: dailyRev, msgs: dailyMsgs || 0 },
+        weekly: { rev: weeklyRev, msgs: weeklyMsgs || 0 },
+        monthly: { rev: monthlyRev, msgs: monthlyMsgs || 0 }
+      }
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Dashboard data error' });
+  }
+});
+
+app.post('/api/crm/manual_customer', async (req, res) => {
+  try {
+    const { senderId, status, priority } = req.body;
+    if (!senderId) return res.status(400).json({ error: 'Müşteri numarası gerekli' });
+    
+    // Profili oluştur veya güncelle
+    await crmSupabase.from('customer_profiles').upsert({
+      sender_id: senderId,
+      status: status || 'Yeni Müşteri',
+      priority: priority || 'Normal',
+      tags: ['Manuel Kayıt']
+    }, { onConflict: 'sender_id' });
+    
+    // Sistemde boş bir mesaj atalım ki activeChats listesinde görünsün
+    await crmSupabase.from('conversations').insert({
+      sender_id: senderId,
+      content: 'Manuel müşteri kaydı açıldı.',
+      role: 'system',
+      timestamp: new Date().toISOString()
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Veritabanı hatası' });
   }
 });
 

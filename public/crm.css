@@ -736,4 +736,56 @@ textarea.form-control {
     justify-content: center;
     align-items: center;
     flex-shrink: 0;
+}/* Portal Menu */
+.portal-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+}
+.portal-btn {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    padding: 25px;
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+.portal-btn i {
+    font-size: 2rem;
+    color: var(--primary);
+    width: 40px;
+}
+.portal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(79, 70, 229, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.back-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--text-main);
 }

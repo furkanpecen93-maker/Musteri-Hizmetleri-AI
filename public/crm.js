@@ -460,6 +460,229 @@ function renderCustomersList() {
             <td style="padding: 15px;"><span class="mini-badge status-${status.replace(/\\s+/g, '-').toLowerCase()}">${status}</span></td>
             <td style="padding: 15px;">${priority}</td>
             <td style="padding: 15px;">${timeString}</td>
+        
+        currentTags = data.tags || [];
+        profileStatusEl.value = data.status || 'Yeni';
+        profilePriorityEl.value = data.priority || 'Normal';
+        profileNotesEl.value = data.notes || '';
+        
+        renderTags();
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        currentTags = [];
+        renderTags();
+    }
+}
+
+function renderTags() {
+    tagsListEl.innerHTML = '';
+    currentTags.forEach(tag => {
+        const badge = document.createElement('div');
+        badge.className = 'tag-badge';
+        badge.innerHTML = `<span onclick="addFilter('tags', '${tag}')" style="cursor: pointer;" title="Filtrele">${tag}</span> <i class="fa-solid fa-xmark" onclick="removeTag('${tag}')"></i>`;
+        tagsListEl.appendChild(badge);
+    });
+}
+
+window.removeTag = function(tagToRemove) {
+    currentTags = currentTags.filter(tag => tag !== tagToRemove);
+    renderTags();
+};
+
+tagInputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        const newTag = tagInputEl.value.trim();
+        if (newTag && !currentTags.includes(newTag)) {
+            currentTags.push(newTag);
+            renderTags();
+        }
+        tagInputEl.value = '';
+    }
+});
+
+saveProfileBtn.addEventListener('click', async () => {
+    if (!currentSelectedSenderId) return;
+    
+    const originalText = saveProfileBtn.innerHTML;
+    saveProfileBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    try {
+        await fetch(`/api/crm/profile/${currentSelectedSenderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                status: profileStatusEl.value,
+                priority: profilePriorityEl.value,
+                tags: currentTags,
+                notes: profileNotesEl.value
+            })
+        });
+        
+        saveProfileBtn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+        setTimeout(() => {
+            saveProfileBtn.innerHTML = originalText;
+        }, 2000);
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        saveProfileBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Hata';
+        setTimeout(() => {
+            saveProfileBtn.innerHTML = originalText;
+        }, 2000);
+    }
+});
+
+// Start
+fetchChats();
+setInterval(fetchChats, 10000); // Sync chat list every 10s
+
+// Send Message Logic
+const chatInputEl = document.getElementById('chat-input');
+const sendMsgBtnEl = document.getElementById('send-msg-btn');
+
+async function sendManualMessage() {
+    if (!currentSelectedSenderId) return;
+    const text = chatInputEl.value.trim();
+    if (!text) return;
+    
+    // Optimistic UI update
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message assistant';
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    msgEl.innerHTML = `
+        <div class="message-content">${text.replace(/\n/g, '<br>')}</div>
+        <div class="message-time">${timeString} <i class="fa-regular fa-clock" style="font-size: 0.7rem; margin-left: 3px;"></i></div>
+    `;
+    chatMessagesEl.appendChild(msgEl);
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    
+    chatInputEl.value = '';
+    chatInputEl.disabled = true;
+    sendMsgBtnEl.disabled = true;
+    sendMsgBtnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    
+    try {
+        const response = await fetch(`/api/crm/messages/${currentSelectedSenderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Bilinmeyen hata');
+        }
+        
+        // Success
+        msgEl.querySelector('.fa-clock').className = 'fa-solid fa-check';
+        
+        // Update takeover status locally
+        activeTakeovers[currentSelectedSenderId] = true;
+        updateHeaderStatus();
+        renderChatList();
+        
+    } catch (err) {
+        console.error('Send message error:', err);
+        msgEl.querySelector('.fa-clock').className = 'fa-solid fa-triangle-exclamation';
+        msgEl.querySelector('.fa-clock').style.color = 'var(--danger)';
+        alert('Hata: ' + err.message);
+    } finally {
+        chatInputEl.disabled = false;
+        sendMsgBtnEl.disabled = false;
+        sendMsgBtnEl.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+        chatInputEl.focus();
+    }
+}
+
+sendMsgBtnEl.onclick = sendManualMessage;
+chatInputEl.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendManualMessage();
+    }
+});
+// --- View Switching Logic ---
+function switchView(viewName) {
+    document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById('view-' + viewName).style.display = viewName === 'messages' ? 'block' : 'block';
+    if (viewName === 'messages') {
+        document.getElementById('view-' + viewName).style.display = 'flex';
+    }
+    
+    document.getElementById('nav-' + viewName).classList.add('active');
+    
+    if (viewName === 'dashboard') {
+        fetchDashboardMetrics();
+    } else if (viewName === 'customers') {
+        renderCustomersList();
+    }
+}
+
+async function fetchDashboardMetrics() {
+    try {
+        const res = await fetch('/api/crm/dashboard');
+        const data = await res.json();
+        
+        // Update main dashboard cards
+        const revEl = document.getElementById('dash-revenue');
+        if(revEl) revEl.textContent = data.totalRevenue + ' ₺';
+        
+        const custEl = document.getElementById('dash-customers');
+        if(custEl) custEl.textContent = data.totalCustomers;
+        
+        const hotEl = document.getElementById('dash-hot');
+        if(hotEl) hotEl.textContent = data.hotCustomers;
+        
+        const ordersEl = document.getElementById('dash-orders');
+        if(ordersEl) ordersEl.textContent = data.pendingOrders;
+        
+        // Update reports section
+        if (data.reports) {
+            const rdRev = document.getElementById('report-daily-rev');
+            const rdMsg = document.getElementById('report-daily-msgs');
+            const rwRev = document.getElementById('report-weekly-rev');
+            const rwMsg = document.getElementById('report-weekly-msgs');
+            const rmRev = document.getElementById('report-monthly-rev');
+            const rmMsg = document.getElementById('report-monthly-msgs');
+            
+            if(rdRev) rdRev.textContent = data.reports.daily.rev + ' ₺';
+            if(rdMsg) rdMsg.textContent = data.reports.daily.msgs;
+            
+            if(rwRev) rwRev.textContent = data.reports.weekly.rev + ' ₺';
+            if(rwMsg) rwMsg.textContent = data.reports.weekly.msgs;
+            
+            if(rmRev) rmRev.textContent = data.reports.monthly.rev + ' ₺';
+            if(rmMsg) rmMsg.textContent = data.reports.monthly.msgs;
+        }
+    } catch (e) {
+        console.error('Dashboard error:', e);
+    }
+}
+
+function renderCustomersList() {
+    const tbody = document.getElementById('customers-table-body');
+    tbody.innerHTML = '';
+    
+    // Use activeChats which contains profile data
+    const uniqueSenders = {};
+    activeChats.forEach(chat => {
+        if (!uniqueSenders[chat.sender_id]) {
+            uniqueSenders[chat.sender_id] = chat;
+        }
+    });
+
+    Object.values(uniqueSenders).forEach(chat => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        const status = chat.profile ? chat.profile.status : 'Yeni Müşteri';
+        const priority = chat.profile ? chat.profile.priority : 'Normal';
+        const timeString = new Date(chat.timestamp).toLocaleString('tr-TR');
+        
+        tr.innerHTML = `
+            <td style="padding: 15px;">${chat.sender_id}</td>
+            <td style="padding: 15px;"><span class="mini-badge status-${status.replace(/\\s+/g, '-').toLowerCase()}">${status}</span></td>
+            <td style="padding: 15px;">${priority}</td>
+            <td style="padding: 15px;">${timeString}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -467,5 +690,34 @@ function renderCustomersList() {
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
-    switchView('dashboard');
+    switchView('portal');
 });
+// --- Manual Customer Logic ---
+async function saveManualCustomer() {
+    const phone = document.getElementById('mc-phone').value;
+    const status = document.getElementById('mc-status').value;
+    const priority = document.getElementById('mc-priority').value;
+    
+    if (!phone) return alert('Lütfen müşteri numarası girin');
+    
+    try {
+        const res = await fetch('/api/crm/manual_customer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senderId: phone, status, priority })
+        });
+        
+        if(res.ok) {
+            document.getElementById('manual-customer-modal').style.display='none';
+            // Reload active chats to show the new customer in the list
+            fetchChats();
+            setTimeout(() => renderCustomersList(), 1000);
+            alert('Müşteri başarıyla eklendi.');
+        } else {
+            alert('Müşteri eklenirken hata oluştu.');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Hata oluştu.');
+    }
+}

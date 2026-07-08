@@ -9,21 +9,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <nav class="top-navbar">
-        <div class="nav-logo"><i class="fa-solid fa-robot"></i> Peçen AI CRM</div>
-        <div class="nav-links">
-            <a href="#" onclick="switchView('dashboard')" id="nav-dashboard" class="nav-link active"><i class="fa-solid fa-chart-line"></i> Ana Ekran</a>
-            <a href="#" onclick="switchView('messages')" id="nav-messages" class="nav-link"><i class="fa-solid fa-comments"></i> Mesajlar</a>
-            <a href="#" onclick="switchView('customers')" id="nav-customers" class="nav-link"><i class="fa-solid fa-users"></i> Müşteriler</a>
-            <a href="#" onclick="switchView('reports')" id="nav-reports" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Raporlar</a>
+    <nav class="top-navbar" style="justify-content: center; height: 80px;">
+        <div class="nav-logo" style="margin: 0; font-size: 1.5rem; cursor: pointer;" onclick="switchView('portal')">
+            <img src="logo.png" alt="Peçen Tekstil" id="brand-logo" style="height: 50px; display: none;" onerror="this.style.display='none'; document.getElementById('brand-text').style.display='inline';">
+            <span id="brand-text"><i class="fa-solid fa-robot"></i> Peçen Tekstil CRM</span>
         </div>
+        <!-- Linkleri portal ekranına taşıdık -->
     </nav>
 
     <div class="main-content">
+        <!-- 0. PORTAL VIEW (BÜYÜK YUVARLAK BUTONLAR) -->
+        <div id="view-portal" class="view-section active" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+            <div class="portal-menu">
+                <button class="portal-btn" onclick="switchView('dashboard')">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Ana Ekran</span>
+                </button>
+                <button class="portal-btn" onclick="switchView('messages')">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Mesajlar</span>
+                </button>
+                <button class="portal-btn" onclick="switchView('customers')">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Müşteriler</span>
+                </button>
+                <button class="portal-btn" onclick="switchView('reports')">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Raporlar</span>
+                </button>
+            </div>
+        </div>
+
         <!-- 1. DASHBOARD VIEW -->
-        <div id="view-dashboard" class="view-section active">
-            <div class="dashboard-header">
-                <h2>Canlı Performans & Özet</h2>
+        <div id="view-dashboard" class="view-section" style="display: none; padding: 30px;">
+            <div class="dashboard-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <button class="back-btn" onclick="switchView('portal')"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                <h2 style="margin: 0;">Canlı Performans & Özet</h2>
             </div>
             <div class="dashboard-cards">
                 <div class="dash-card">
@@ -178,45 +199,103 @@
                             <div class="tags-input-container"><input type="text" id="tag-input" placeholder="Etiket yazıp Enter'a basın..."></div>
                             <div class="tags-list" id="tags-list"></div>
                         </div>
-                        <div class="form-group">
-                            <label>Özel Notlar</label>
-                            <textarea id="profile-notes" class="form-control" placeholder="Müşteri hakkında özel notlar..."></textarea>
-                        </div>
-                        <button class="btn btn-primary w-100" id="save-profile-btn" style="margin-top: auto;">
-                            <i class="fa-solid fa-save"></i> Profili Kaydet
-                        </button>
+                        <!-- Messages inserted via JS -->
                     </div>
-                </aside>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Müşteriye manuel cevap yazın (AI devredışı kalır)...">
+                        <button id="send-msg-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- 3. CUSTOMERS VIEW -->
         <div id="view-customers" class="view-section" style="display: none; padding: 30px;">
-            <div class="dashboard-header">
-                <h2>Müşteri Listesi</h2>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="back-btn" onclick="switchView('portal')"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                    <h2 style="margin: 0;">Müşteri Listesi</h2>
+                </div>
+                <button class="btn btn-primary" onclick="document.getElementById('manual-customer-modal').style.display='flex'"><i class="fa-solid fa-plus"></i> Yeni Ekle</button>
             </div>
-            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
                 <table style="width: 100%; text-align: left; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border);">
-                            <th style="padding: 10px;">Telefon/ID</th>
-                            <th style="padding: 10px;">Durum</th>
-                            <th style="padding: 10px;">Öncelik</th>
-                            <th style="padding: 10px;">Son İşlem</th>
+                            <th style="padding: 15px;">Müşteri No/Tel</th>
+                            <th style="padding: 15px;">Durum</th>
+                            <th style="padding: 15px;">Öncelik</th>
+                            <th style="padding: 15px;">Son İşlem</th>
                         </tr>
                     </thead>
-                    <tbody id="customers-table-body"></tbody>
+                    <tbody id="customers-table-body">
+                        <!-- JS ile dolacak -->
+                    </tbody>
                 </table>
             </div>
         </div>
 
         <!-- 4. REPORTS VIEW -->
         <div id="view-reports" class="view-section" style="display: none; padding: 30px;">
-            <div class="dashboard-header">
-                <h2>Performans Raporları</h2>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <button class="back-btn" onclick="switchView('portal')"><i class="fa-solid fa-arrow-left"></i> Geri</button>
+                <h2 style="margin: 0;">Raporlar</h2>
             </div>
-            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
-                <p>Yakında eklenecek...</p>
+            
+            <div class="dashboard-cards">
+                <div class="dash-card">
+                    <div class="dash-info">
+                        <h3>Günlük Özet</h3>
+                        <p id="report-daily-rev">0 ₺</p>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Bugün Gelen: <strong id="report-daily-msgs">0</strong> Mesaj</span>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-info">
+                        <h3>Haftalık Özet</h3>
+                        <p id="report-weekly-rev">0 ₺</p>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Bu Hafta: <strong id="report-weekly-msgs">0</strong> Mesaj</span>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-info">
+                        <h3>Aylık Özet</h3>
+                        <p id="report-monthly-rev">0 ₺</p>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Bu Ay: <strong id="report-monthly-msgs">0</strong> Mesaj</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="manual-customer-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 9999;">
+        <div style="background: white; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%;">
+            <h3 style="margin-top: 0;">Manuel Müşteri Ekle</h3>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Müşteri Telefon / ID</label>
+                <input type="text" id="mc-phone" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;" placeholder="+905...">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Durum</label>
+                <select id="mc-status" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <option value="Yeni Müşteri">Yeni Müşteri</option>
+                    <option value="Sıcak Müşteri (Sordu Almadı)">Sıcak Müşteri (Sordu Almadı)</option>
+                    <option value="Sipariş Aşamasında">Sipariş Aşamasında</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 5px;">Öncelik</label>
+                <select id="mc-priority" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <option value="Normal">Normal</option>
+                    <option value="Yüksek">Yüksek</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="document.getElementById('manual-customer-modal').style.display='none'">İptal</button>
+                <button class="btn btn-primary" onclick="saveManualCustomer()">Kaydet</button>
             </div>
         </div>
     </div>
