@@ -123,11 +123,19 @@ app.get('/webhook', (req, res) => {
 // Instagram DM + Messenger mesajları burada gelir
 // ══════════════════════════════════════════════
 
-// Per-sender processing lock (burst coalesce)
-const processingLock = new Map();
+// ── Mesaj Biriktirme (Debounce) Sistemi ──
+// AutoResponder mesajları SIRALI gönderiyor (1. mesaj cevabını alıp, 2.yi gönderiyor)
+// Bu nedenle HTTP-level lock çalışmaz. Bunun yerine zaman penceresine dayalı biriktirme:
+// - Bir müşteriden kısa sürede (DEBOUNCE_WINDOW_MS) art arda mesaj gelirse, sadece kuyruğa al ve boş dön
+// - Yeterince sessiz kalındığında (DEBOUNCE_WAIT_MS), biriken mesajları birleştirip tek AI cevabı üret
+const processingLock = new Map(); // Hala backward compat için tutuyoruz
 const COALESCE_INITIAL_MS = 10000;
 const COALESCE_STRAGGLER_MS = 5000;
 const COALESCE_MAX_ITER = 6;
+
+const DEBOUNCE_WINDOW_MS = 15000;  // 15 saniye içinde gelen mesajlar biriktirilir
+const DEBOUNCE_WAIT_MS = 8000;     // Son mesajdan 8 saniye geçince birleştirilmiş cevap üret
+const messageAccumulator = new Map(); // senderId → { messages: [], lastMessageTime: number, timer: null, resolvePromise: null }
 
 // ── İnsan Devralma (Human Takeover) Sistemi ──
 // İnsan ekip bir müşteriye yazdığında bot 15 dk susar
@@ -693,7 +701,9 @@ app.post('/webhook/manychat', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════
-// 3.8. AUTORESPONDER YENİ YAPI (DÜZ METİN)
+// 3.8. AUTORESPONDER YENİ YAPI (DEBOUNCE-TABANLI)
+// AutoResponder mesajları SIRALI gönderiyor (1. mesaj cevabını alıp 2.yi gönderiyor)
+// Bu nedenle HTTP-level lock çalışmaz. Debounce sistemiyle mesajlar biriktirilir.
 // ══════════════════════════════════════════════
 app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) => {
   try {
@@ -702,7 +712,6 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       try {
         parsedBody = JSON.parse(req.body);
       } catch (e) {
-        // Parse error ignore - Might be x-www-form-urlencoded
         try {
           const params = new URLSearchParams(req.body);
           for (const [key, value] of params.entries()) {
@@ -731,7 +740,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     // Clean [test] from sender
     senderId = senderId.replace(/\[test\]/g, '');
 
-    // Grup mesajlarını engelle (isGroup bayrağı veya ID'de '@g.us' / '-' / 'group' kontrolü)
+    // Grup mesajlarını engelle
     const isGroupAr = parsedBody.isGroup || arQuery.isGroup 
       || String(senderId).includes('@g.us') 
       || String(senderId).includes('group')
@@ -743,95 +752,116 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     }
 
     if (!messageText) {
-      log.warn('[autoresponder] Mesaj boş geldi. Payload incelemesi:', {
-        rawBody: typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
-        query: req.query,
-        parsedBody
-      });
       return res.status(400).json({ reply: '', replies: [] });
     }
 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
-    // ── BURST COALESCE: Lock kontrolü + oluşturma TÜM async işlemlerden ÖNCE ──
-    // Bu sayede 2. ve 3. mesajlar hiç beklemeden kuyruğa girer
-    const existingArLock = processingLock.get(senderId);
-    if (existingArLock) {
-      existingArLock.queue.push(messageText);
-      log.info(`[autoresponder] Burst kuyruğa eklendi`, { senderId, queueLen: existingArLock.queue.length });
-      res.set('Content-Type', 'application/json; charset=utf-8');
-      return res.json({ reply: '', replies: [] });
-    }
-    // Lock'u HEMEN oluştur — await'lerden önce
-    const arLockEntry = { queue: [] };
-    processingLock.set(senderId, arLockEntry);
-
+    // Duplicate kontrolü
     if (await isDuplicate(senderId, messageText)) {
-      processingLock.delete(senderId);
       res.set('Content-Type', 'application/json; charset=utf-8');
       return res.json({ reply: '', replies: [] });
     }
 
-    // Analytics & followup: müşteri mesaj attı
+    // ── DEBOUNCE MESAJ BİRİKTİRME ──
+    // Son DEBOUNCE_WINDOW_MS içinde bu göndericiden başka mesaj gelmiş mi?
+    const now = Date.now();
+    const accumulator = messageAccumulator.get(senderId);
+    
+    if (accumulator && (now - accumulator.lastMessageTime) < DEBOUNCE_WINDOW_MS) {
+      // Yakın zamanda mesaj var — bu mesajı biriktir, boş cevap dön
+      accumulator.messages.push(messageText);
+      accumulator.lastMessageTime = now;
+      log.info(`[autoresponder] Mesaj biriktirildi (debounce)`, { 
+        senderId, 
+        queueLen: accumulator.messages.length,
+        timeSinceLastMs: now - accumulator.lastMessageTime 
+      });
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ reply: '', replies: [] });
+    }
+
+    // İlk mesaj veya debounce penceresi dolmuş — yeni birikim başlat
+    messageAccumulator.set(senderId, {
+      messages: [messageText],
+      lastMessageTime: now
+    });
+
+    // DEBOUNCE_WAIT_MS bekle — bu sürede yeni mesaj gelirse biriktirilecek
+    await sleep(DEBOUNCE_WAIT_MS);
+
+    // Bekleme bitti — biriken tüm mesajları al
+    const finalAccumulator = messageAccumulator.get(senderId);
+    const allMessages = finalAccumulator ? finalAccumulator.messages.splice(0) : [messageText];
+    messageAccumulator.delete(senderId);
+
+    const combinedMessage = allMessages.length === 1 ? allMessages[0] : allMessages.join('\n');
+    if (allMessages.length > 1) {
+      log.info(`[autoresponder] ${allMessages.length} mesaj birleştirildi (debounce)`, { senderId });
+    }
+
+    // Sıfırlama komutu
+    if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
+      await clearHistory(senderId);
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      return res.json({ 
+        reply: 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.',
+        replies: [{ message: 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.' }]
+      });
+    }
+
+    // Analytics & followup
     completeFollowup(senderId).catch(() => {});
     const isNewAr = !(await memHasUserBeenGreeted(senderId));
-    trackEvent(senderId, 'message_received', 'whatsapp', { message_length: messageText.length, is_new_customer: isNewAr }).catch(() => {});
+    trackEvent(senderId, 'message_received', 'whatsapp', { message_length: combinedMessage.length, is_new_customer: isNewAr }).catch(() => {});
 
-    const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      const currentState = await getState(senderId);
-      currentState.platform = 'whatsapp';
-      // SADECE daha önce HİÇ selamlanmamış kişilere gönder
-      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
-      
-      await addMessage(senderId, 'user', combinedMsg);
-      const [catalog, history] = await Promise.all([
-        getCatalog(),
-        getHistory(senderId)
-      ]);
-      const aiStartTime = Date.now();
-      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
-      const responseTimeMs = Date.now() - aiStartTime;
-      const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
-      
-      if (respObj.stateUpdates) {
-        await updateState(senderId, respObj.stateUpdates);
-      }
-
-      // Analytics tracking
-      analyzeAndTrack(senderId, combinedMsg, respObj.text, 'whatsapp', {
-        responseTimeMs,
-        toolCalled: respObj.toolCallInfo?.toolCalled,
-        queryUsed: respObj.toolCallInfo?.queryUsed,
-        resultCount: respObj.toolCallInfo?.resultCount,
-        productCodes: respObj.toolCallInfo?.productCodes
-      }).catch(() => {});
-
-      // Followup kuyruğuna ekle
-      enqueueFollowup(senderId, 'whatsapp').catch(() => {});
-      
-      if (isFirstMessageEver) {
-        await markUserAsGreeted(senderId);
-        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
-      }
-      
-      await addMessage(senderId, 'assistant', aiResponseText);
-      triggerAudit(senderId);
-      
-      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
-    }, arLockEntry);
-
-    if (aiResponse === null) {
-      res.set('Content-Type', 'application/json; charset=utf-8');
-      return res.json({ reply: '', replies: [] });
+    // AI işleme
+    const currentState = await getState(senderId);
+    currentState.platform = 'whatsapp';
+    const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
+    
+    await addMessage(senderId, 'user', combinedMessage);
+    const [catalog, history] = await Promise.all([
+      getCatalog(),
+      getHistory(senderId)
+    ]);
+    const aiStartTime = Date.now();
+    const respObj = await generateResponse(combinedMessage, history, catalog, currentState);
+    const responseTimeMs = Date.now() - aiStartTime;
+    const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMessage);
+    
+    if (respObj.stateUpdates) {
+      await updateState(senderId, respObj.stateUpdates);
     }
 
-    log.info('[autoresponder] Cevap üretildi', { senderId, len: aiResponse.length });
+    // Analytics tracking
+    analyzeAndTrack(senderId, combinedMessage, respObj.text, 'whatsapp', {
+      responseTimeMs,
+      toolCalled: respObj.toolCallInfo?.toolCalled,
+      queryUsed: respObj.toolCallInfo?.queryUsed,
+      resultCount: respObj.toolCallInfo?.resultCount,
+      productCodes: respObj.toolCallInfo?.productCodes
+    }).catch(() => {});
+
+    enqueueFollowup(senderId, 'whatsapp').catch(() => {});
+    
+    if (isFirstMessageEver) {
+      await markUserAsGreeted(senderId);
+      await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+    }
+    
+    await addMessage(senderId, 'assistant', aiResponseText);
+    triggerAudit(senderId);
+    
+    const finalResponse = isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+
+    log.info('[autoresponder] Cevap üretildi', { senderId, msgCount: allMessages.length });
 
     // AutoResponder expects a JSON response with a "replies" array
-    const replies = Array.isArray(aiResponse) ? aiResponse.map(msg => ({ message: msg })) : [{ message: aiResponse }];
+    const replies = Array.isArray(finalResponse) ? finalResponse.map(msg => ({ message: msg })) : [{ message: finalResponse }];
     res.set('Content-Type', 'application/json; charset=utf-8');
     return res.json({ 
-      reply: Array.isArray(aiResponse) ? aiResponse[0] : aiResponse,
+      reply: Array.isArray(finalResponse) ? finalResponse[0] : finalResponse,
       replies: replies 
     });
   } catch (err) {
