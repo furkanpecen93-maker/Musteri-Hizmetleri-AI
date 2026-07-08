@@ -11,7 +11,7 @@
 <body>
     <nav class="top-navbar" style="justify-content: center; height: 80px;">
         <div class="nav-logo" style="margin: 0; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 10px;" onclick="switchView('portal')">
-            <img src="logo.png" alt="Peçen Tekstil" id="brand-logo" style="height: 50px; object-fit: contain;" onerror="this.style.display='none'; document.getElementById('brand-text').style.display='inline';">
+            <img src="logo.png" alt="Peçen Tekstil" id="brand-logo" style="height: 70px; object-fit: contain;" onerror="this.style.display='none'; document.getElementById('brand-text').style.display='inline';">
             <span id="brand-text" style="display: none;"><i class="fa-solid fa-robot"></i> Peçen Tekstil CRM</span>
         </div>
         <!-- Linkleri portal ekranına taşıdık -->
@@ -141,7 +141,10 @@
                     </div>
                     <div class="profile-content">
                         <div class="form-group">
-                            <label>Durum <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('status', document.getElementById('profile-status').value)" title="Bu durumu filtreye ekle"></i></label>
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Durum <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('status', document.getElementById('profile-status').value)" title="Bu durumu filtreye ekle"></i></span>
+                                <button id="ai-analyze-btn" class="btn btn-secondary" style="background: rgba(161, 170, 143, 0.2); color: var(--sage); padding: 4px 8px; font-size: 0.75rem;" onclick="analyzeProfileWithAI()"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Yapsın</button>
+                            </label>
                             <select id="profile-status" class="form-control">
                                 <option value="Yeni Müşteri">Yeni Müşteri</option>
                                 <option value="Eski Müşteri">Eski Müşteri</option>

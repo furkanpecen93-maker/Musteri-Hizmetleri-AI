@@ -530,3 +530,33 @@ async function saveManualCustomer() {
         alert('Hata oluştu.');
     }
 }
+
+// --- AI Analysis Logic ---
+window.analyzeProfileWithAI = async function() {
+    if (!currentSelectedSenderId) return alert('Lütfen önce bir müşteri seçin.');
+    
+    const btn = document.getElementById('ai-analyze-btn');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Düşünüyor...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/api/crm/ai-analyze/${currentSelectedSenderId}`);
+        if (!response.ok) throw new Error('AI Analizi başarısız oldu');
+        
+        const data = await response.json();
+        
+        if (data.status) document.getElementById('profile-status').value = data.status;
+        if (data.priority) document.getElementById('profile-priority').value = data.priority;
+        
+        // Auto-save the new profile info
+        saveProfileBtn.click();
+        
+    } catch (err) {
+        console.error('AI Analysis Error:', err);
+        alert('AI Analizi başarısız oldu. Manuel seçiniz.');
+    } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+};

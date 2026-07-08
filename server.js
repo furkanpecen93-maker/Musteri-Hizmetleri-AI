@@ -1061,6 +1061,54 @@ app.get('/api/crm/profile/:senderId', async (req, res) => {
   }
 });
 
+app.get('/api/crm/ai-analyze/:senderId', async (req, res) => {
+  try {
+    const senderId = req.params.senderId;
+    const { getHistory } = require('./services/memory');
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    
+    if (!config.geminiApiKey) {
+        return res.status(500).json({ error: 'Gemini API anahtarı ayarlanmamış.' });
+    }
+
+    const history = await getHistory(senderId);
+    if (!history || history.length === 0) {
+        return res.json({ status: 'Yeni Müşteri', priority: 'Normal' });
+    }
+
+    const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Son 20 mesaja göre analiz et
+    const chatText = history.slice(-20).map(m => `${m.role === 'user' ? 'Müşteri' : 'Bot'}: ${m.content}`).join('\n');
+
+    const prompt = `Aşağıdaki konuşma geçmişine bakarak müşterinin mevcut durumunu ve önceliğini analiz et.
+
+Konuşma Geçmişi:
+${chatText}
+
+Geçerli Durumlar (status): "Yeni Müşteri", "Eski Müşteri", "Sıcak Müşteri (Sordu Almadı)", "Sipariş Aşamasında", "Kargo Bekliyor", "Tamamlandı"
+Geçerli Öncelikler (priority): "Düşük", "Normal", "Orta", "Yüksek"
+
+Sadece saf JSON formatında cevap dön. Markdown kullanma:
+{"status": "...", "priority": "..."}`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        res.json(parsed);
+    } else {
+        throw new Error('AI geçerli bir JSON dönmedi.');
+    }
+  } catch (err) {
+    log.error('[crm] AI Analysis Hatası:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/crm/profile/:senderId', async (req, res) => {
   try {
     let body = req.body;
