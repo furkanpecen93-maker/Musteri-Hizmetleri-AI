@@ -149,4 +149,17 @@ function isGenericGreeting(messageText) {
   return exactMatches.includes(txt);
 }
 
-module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting, clearHistory, markUserAsGreeted, hasUserBeenGreeted };
+async function saveOrder(senderId, amount) {
+  try {
+    await supabase.from('orders').insert([{
+      sender_id: senderId,
+      amount: amount
+    }]);
+    return true;
+  } catch (err) {
+    console.error('[memory] Sipariş kaydetme hatası:', err);
+    return false;
+  }
+}
+
+module.exports = { addMessage, getHistory, isDuplicate, getState, updateState, isGenericGreeting, clearHistory, markUserAsGreeted, hasUserBeenGreeted, saveOrder };

@@ -404,3 +404,68 @@ chatInputEl.addEventListener('keypress', (e) => {
         sendManualMessage();
     }
 });
+// --- View Switching Logic ---
+function switchView(viewName) {
+    document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById('view-' + viewName).style.display = viewName === 'messages' ? 'block' : 'block';
+    if (viewName === 'messages') {
+        document.getElementById('view-' + viewName).style.display = 'flex';
+    }
+    
+    document.getElementById('nav-' + viewName).classList.add('active');
+    
+    if (viewName === 'dashboard') {
+        fetchDashboardMetrics();
+    } else if (viewName === 'customers') {
+        renderCustomersList();
+    }
+}
+
+async function fetchDashboardMetrics() {
+    try {
+        const res = await fetch('/api/crm/dashboard');
+        const data = await res.json();
+        document.getElementById('dash-revenue').textContent = data.totalRevenue + ' ?';
+        document.getElementById('dash-customers').textContent = data.totalCustomers;
+        document.getElementById('dash-hot').textContent = data.hotCustomers;
+        document.getElementById('dash-orders').textContent = data.pendingOrders;
+    } catch (e) {
+        console.error('Dashboard error:', e);
+    }
+}
+
+function renderCustomersList() {
+    const tbody = document.getElementById('customers-table-body');
+    tbody.innerHTML = '';
+    
+    // Use activeChats which contains profile data
+    const uniqueSenders = {};
+    activeChats.forEach(chat => {
+        if (!uniqueSenders[chat.sender_id]) {
+            uniqueSenders[chat.sender_id] = chat;
+        }
+    });
+
+    Object.values(uniqueSenders).forEach(chat => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        const status = chat.profile ? chat.profile.status : 'Yeni Müþteri';
+        const priority = chat.profile ? chat.profile.priority : 'Normal';
+        const timeString = new Date(chat.timestamp).toLocaleString('tr-TR');
+        
+        tr.innerHTML = \
+            <td style="padding: 15px;">\</td>
+            <td style="padding: 15px;"><span class="mini-badge status-\">\</span></td>
+            <td style="padding: 15px;">\</td>
+            <td style="padding: 15px;">\</td>
+        \;
+        tbody.appendChild(tr);
+    });
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    switchView('dashboard');
+});

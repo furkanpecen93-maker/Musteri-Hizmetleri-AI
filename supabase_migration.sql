@@ -55,3 +55,18 @@ CREATE INDEX IF NOT EXISTS idx_profiles_priority ON customer_profiles(priority);
 
 ALTER TABLE customer_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on customer_profiles" ON customer_profiles FOR ALL USING (true) WITH CHECK (true);
+
+-- 4. orders — Ciro takibi için siparişler tablosu
+CREATE TABLE IF NOT EXISTS orders (
+  id BIGSERIAL PRIMARY KEY,
+  sender_id TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  currency TEXT DEFAULT 'TRY',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_sender ON orders(sender_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on orders" ON orders FOR ALL USING (true) WITH CHECK (true);

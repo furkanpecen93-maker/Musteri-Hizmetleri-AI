@@ -2,7 +2,7 @@
 const fetch = require('node-fetch');
 const { config } = require('../config/env');
 const log = require('../utils/logger');
-const { isGenericGreeting } = require('./memory');
+const { isGenericGreeting, saveOrder } = require('./memory');
 const { searchProducts } = require('./catalog');
 
 /**
@@ -12,7 +12,7 @@ const { searchProducts } = require('./catalog');
  * @param {Object} catalogData - Ürün kataloğu verisi (ARTIK KULLANILMIYOR, DİNAMİK)
  * @returns {string} AI cevabı
  */
-async function generateResponse(userMessage, conversationHistory = [], catalogData = null, userState = {}) {
+async function generateResponse(userMessage, conversationHistory = [], catalogData = [], userState = {}, senderId = null) {
   // AI Bypass (Sıfır Risk Kesicisi) tamamen kaldırıldı. 
   // Artık ilk karşılama doğrudan Gemini tarafından "Esnaf" ağzıyla doğal olarak yapılacak.
 
@@ -67,6 +67,20 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
           }
         },
         required: ["query"]
+      }
+    },
+    {
+      name: "satis_kaydet",
+      description: "Müşteri ile anlaşma sağlandığında ve müşteri SİPARİŞİ ONAYLADIĞINDA bu aracı kullanarak siparişin tutarını (ciro) kaydedin.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          amount: {
+            type: "NUMBER",
+            description: "Siparişin toplam tutarı (sadece rakam, örn: 1500, 3450.50 vb.)"
+          }
+        },
+        required: ["amount"]
       }
     }]
   }];
@@ -175,6 +189,35 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     data = await makeGeminiRequest(payload);
     if (!data) {
       return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {}, toolCallInfo };
+    }
+  } else if (functionCall && functionCall.name === "satis_kaydet") {
+    log.info(`[gemini] SATIS KAYDEDILIYOR: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
+    const amount = functionCall.args.amount;
+    if (senderId) {
+      await saveOrder(senderId, amount);
+    }
+    
+    // Modelin ilk fonksiyon çağrısını içeriğe ekle
+    payload.contents.push(data.candidates[0].content);
+    
+    // Bizim vereceğimiz cevabı functionResponse olarak ekle
+    payload.contents.push({
+      role: 'function',
+      parts: [{
+        functionResponse: {
+          name: "satis_kaydet",
+          response: { 
+            name: "satis_kaydet",
+            content: { result: "Sipariş tutarı başarıyla kaydedildi." }
+          }
+        }
+      }]
+    });
+    
+    // İkinci kez API'ye istek at
+    data = await makeGeminiRequest(payload);
+    if (!data) {
+      return { text: 'Siparişinizi kaydettik, teşekkür ederiz.', stateUpdates: {}, toolCallInfo };
     }
   }
 

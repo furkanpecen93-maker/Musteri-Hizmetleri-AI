@@ -9,8 +9,58 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
+    <nav class="top-navbar">
+        <div class="nav-logo"><i class="fa-solid fa-robot"></i> Peçen AI CRM</div>
+        <div class="nav-links">
+            <a href="#" onclick="switchView('dashboard')" id="nav-dashboard" class="nav-link active"><i class="fa-solid fa-chart-line"></i> Ana Ekran</a>
+            <a href="#" onclick="switchView('messages')" id="nav-messages" class="nav-link"><i class="fa-solid fa-comments"></i> Mesajlar</a>
+            <a href="#" onclick="switchView('customers')" id="nav-customers" class="nav-link"><i class="fa-solid fa-users"></i> Müşteriler</a>
+            <a href="#" onclick="switchView('reports')" id="nav-reports" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Raporlar</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- 1. DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view-section active">
+            <div class="dashboard-header">
+                <h2>Canlı Performans & Özet</h2>
+            </div>
+            <div class="dashboard-cards">
+                <div class="dash-card">
+                    <div class="dash-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i class="fa-solid fa-lira-sign"></i></div>
+                    <div class="dash-info">
+                        <h3>Toplam Ciro</h3>
+                        <p id="dash-revenue">0 ₺</p>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i class="fa-solid fa-users"></i></div>
+                    <div class="dash-info">
+                        <h3>Toplam Müşteri</h3>
+                        <p id="dash-customers">0</p>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="fa-solid fa-fire"></i></div>
+                    <div class="dash-info">
+                        <h3>Sıcak Müşteri</h3>
+                        <p id="dash-hot">0</p>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i class="fa-solid fa-box"></i></div>
+                    <div class="dash-info">
+                        <h3>Sipariş Bekleyen</h3>
+                        <p id="dash-orders">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MESSAGES VIEW (Current Interface) -->
+        <div id="view-messages" class="view-section" style="display: none;">
+            <div class="app-container">
+                <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2><i class="fa-solid fa-robot"></i> AI Asistan</h2>
@@ -55,64 +105,120 @@
                 <div class="empty-state">
                     <i class="fa-solid fa-comments"></i>
                     <p>Mesajları görmek için bir sohbet seçin</p>
-                </div>
-            </div>
-            
-            <div class="chat-input-area" id="chat-input-area" style="display: none;">
-                <input type="text" id="chat-input" placeholder="Müşteriye bir mesaj yazın..." autocomplete="off">
-                <button id="send-msg-btn" class="btn btn-primary" title="Mesaj Gönder"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </main>
-
-        <!-- Right Profile Sidebar -->
-        <aside class="profile-sidebar" id="profile-sidebar" style="display: none;">
-            <div class="sidebar-header">
-                <h2><i class="fa-solid fa-address-card"></i> Müşteri Profili</h2>
-            </div>
-            
-            <div class="profile-content">
-                <div class="form-group">
-                    <label>Durum <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('status', document.getElementById('profile-status').value)" title="Bu durumu filtreye ekle"></i></label>
-                    <select id="profile-status" class="form-control">
-                        <option value="Yeni Müşteri">Yeni Müşteri</option>
-                        <option value="Eski Müşteri">Eski Müşteri</option>
-                        <option value="Sıcak Müşteri (Sordu Almadı)">Sıcak Müşteri (Sordu Almadı)</option>
-                        <option value="Sipariş Aşamasında">Sipariş Aşamasında</option>
-                        <option value="Kargo Bekliyor">Kargo Bekliyor</option>
-                        <option value="Tamamlandı">Tamamlandı</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Öncelik <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('priority', document.getElementById('profile-priority').value)" title="Bu önceliği filtreye ekle"></i></label>
-                    <select id="profile-priority" class="form-control">
-                        <option value="Yüksek">Yüksek</option>
-                        <option value="Orta">Orta</option>
-                        <option value="Normal">Normal</option>
-                        <option value="Düşük">Düşük</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Etiketler</label>
-                    <div class="tags-input-container">
-                        <input type="text" id="tag-input" placeholder="Etiket yazıp Enter'a basın...">
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <h2><i class="fa-solid fa-robot"></i> AI Asistan</h2>
+                        <span class="badge" id="chat-count">0</span>
                     </div>
-                    <div class="tags-list" id="tags-list">
-                        <!-- Tags will be injected here -->
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Müşteri ara...">
                     </div>
-                </div>
+                    <div id="active-filters-container" class="active-filters-container" style="display: none;"></div>
+                    <div class="chat-list" id="chat-list">
+                        <div class="loading-spinner">Yükleniyor...</div>
+                    </div>
+                </aside>
 
-                <div class="form-group">
-                    <label>Özel Notlar</label>
-                    <textarea id="profile-notes" class="form-control" placeholder="Müşteri ile ilgili notlar..."></textarea>
-                </div>
+                <main class="chat-area">
+                    <div class="chat-header" id="chat-header" style="display: none;">
+                        <div class="chat-user-info">
+                            <button id="mobile-back-btn" class="btn btn-icon" style="display: none;"><i class="fa-solid fa-arrow-left"></i></button>
+                            <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                            <div class="details">
+                                <h3 id="current-chat-name">Seçili Müşteri Yok</h3>
+                                <span class="status online" id="bot-status-text">Bot Aktif</span>
+                            </div>
+                        </div>
+                        <div class="chat-actions">
+                            <button id="toggle-pause-btn" class="btn btn-pause"><i class="fa-solid fa-pause"></i> Botu Sustur</button>
+                        </div>
+                    </div>
 
-                <button id="save-profile-btn" class="btn btn-primary w-100">
-                    <i class="fa-solid fa-save"></i> Kaydet
-                </button>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-comments"></i>
+                            <p>Mesajları görmek için bir sohbet seçin</p>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                        <input type="text" id="chat-input" placeholder="Müşteriye bir mesaj yazın..." autocomplete="off">
+                        <button id="send-msg-btn" class="btn btn-primary" title="Mesaj Gönder"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </main>
+
+                <aside class="profile-sidebar" id="profile-sidebar" style="display: none;">
+                    <div class="sidebar-header">
+                        <h2><i class="fa-solid fa-address-card"></i> Müşteri Profili</h2>
+                    </div>
+                    <div class="profile-content">
+                        <div class="form-group">
+                            <label>Durum <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('status', document.getElementById('profile-status').value)" title="Bu durumu filtreye ekle"></i></label>
+                            <select id="profile-status" class="form-control">
+                                <option value="Yeni Müşteri">Yeni Müşteri</option>
+                                <option value="Eski Müşteri">Eski Müşteri</option>
+                                <option value="Sıcak Müşteri (Sordu Almadı)">Sıcak Müşteri (Sordu Almadı)</option>
+                                <option value="Sipariş Aşamasında">Sipariş Aşamasında</option>
+                                <option value="Kargo Bekliyor">Kargo Bekliyor</option>
+                                <option value="Tamamlandı">Tamamlandı</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Öncelik <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('priority', document.getElementById('profile-priority').value)" title="Bu önceliği filtreye ekle"></i></label>
+                            <select id="profile-priority" class="form-control">
+                                <option value="Yüksek">Yüksek</option>
+                                <option value="Orta">Orta</option>
+                                <option value="Normal">Normal</option>
+                                <option value="Düşük">Düşük</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Etiketler</label>
+                            <div class="tags-input-container"><input type="text" id="tag-input" placeholder="Etiket yazıp Enter'a basın..."></div>
+                            <div class="tags-list" id="tags-list"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Özel Notlar</label>
+                            <textarea id="profile-notes" class="form-control" placeholder="Müşteri hakkında özel notlar..."></textarea>
+                        </div>
+                        <button class="btn btn-primary w-100" id="save-profile-btn" style="margin-top: auto;">
+                            <i class="fa-solid fa-save"></i> Profili Kaydet
+                        </button>
+                    </div>
+                </aside>
             </div>
-        </aside>
+        </div>
+
+        <!-- 3. CUSTOMERS VIEW -->
+        <div id="view-customers" class="view-section" style="display: none; padding: 30px;">
+            <div class="dashboard-header">
+                <h2>Müşteri Listesi</h2>
+            </div>
+            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px;">Telefon/ID</th>
+                            <th style="padding: 10px;">Durum</th>
+                            <th style="padding: 10px;">Öncelik</th>
+                            <th style="padding: 10px;">Son İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. REPORTS VIEW -->
+        <div id="view-reports" class="view-section" style="display: none; padding: 30px;">
+            <div class="dashboard-header">
+                <h2>Performans Raporları</h2>
+            </div>
+            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+                <p>Yakında eklenecek...</p>
+            </div>
+        </div>
     </div>
 
     <script src="crm.js"></script>

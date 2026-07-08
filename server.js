@@ -295,7 +295,7 @@ async function processMessage(senderId, initialMessage, platform) {
       const aiStartTime = Date.now();
       const currentState = await getState(senderId);
       currentState.platform = platform;
-      const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState);
+      const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState, senderId);
       const responseTimeMs = Date.now() - aiStartTime;
       const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
 
@@ -462,7 +462,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
         getHistory(senderId)
       ]);
       const aiStartTime = Date.now();
-      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState, senderId);
       const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
@@ -572,7 +572,7 @@ app.post('/webhook/manychat', async (req, res) => {
         getHistory(senderId)
       ]);
       const aiStartTime = Date.now();
-      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState, senderId);
       const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       if (respObj.stateUpdates) {
@@ -724,7 +724,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
         getHistory(senderId)
       ]);
       const aiStartTime = Date.now();
-      const respObj = await generateResponse(combinedMsg, history, catalog, currentState);
+      const respObj = await generateResponse(combinedMsg, history, catalog, currentState, senderId);
       const responseTimeMs = Date.now() - aiStartTime;
       const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
       
@@ -817,6 +817,32 @@ app.post('/admin/catalog/refresh', (req, res) => {
 // --- CRM API ---
 const { createClient } = require('@supabase/supabase-js');
 const crmSupabase = createClient(config.supabaseUrl, config.supabaseKey);
+
+app.get('/api/crm/dashboard', async (req, res) => {
+  try {
+    // Toplam ciro
+    const { data: orders } = await crmSupabase.from('orders').select('amount');
+    const totalRevenue = orders ? orders.reduce((sum, o) => sum + Number(o.amount), 0) : 0;
+    
+    // Toplam müşteri
+    const { count: totalCustomers } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true });
+    
+    // Sıcak müşteri
+    const { count: hotCustomers } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true }).eq('status', 'Sıcak Müşteri (Sordu Almadı)');
+    
+    // Bekleyen sipariş
+    const { count: pendingOrders } = await crmSupabase.from('customer_profiles').select('*', { count: 'exact', head: true }).eq('status', 'Sipariş Aşamasında');
+    
+    res.json({
+      totalRevenue,
+      totalCustomers: totalCustomers || 0,
+      hotCustomers: hotCustomers || 0,
+      pendingOrders: pendingOrders || 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Dashboard data error' });
+  }
+});
 
 app.get('/api/crm/chats', async (req, res) => {
   try {
