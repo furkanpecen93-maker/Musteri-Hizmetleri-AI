@@ -360,17 +360,25 @@ async function processMessage(senderId, initialMessage, platform) {
 
 /**
  * Senkron (HTTP Response bekleyen) Webhook'lar için Burst Coalesce (WhatsApp / ManyChat)
+ * @param {string} senderId
+ * @param {string} initialMessage
+ * @param {Function} handler
+ * @param {Object} [preCreatedLock] - Endpoint tarafından önceden oluşturulmuş lock (race condition önlemek için)
  */
-async function processSyncWebhook(senderId, initialMessage, handler) {
-  const existingLock = processingLock.get(senderId);
-  if (existingLock) {
-    existingLock.queue.push(initialMessage);
-    log.info(`[sync-webhook] Burst kuyruğa eklendi`, { senderId, queueLen: existingLock.queue.length });
-    return null; // Null dönüyoruz ki çağıran HTTP endpoint boş 200 OK dönsün
+async function processSyncWebhook(senderId, initialMessage, handler, preCreatedLock) {
+  // Pre-created lock yoksa eski davranış (backward compat)
+  if (!preCreatedLock) {
+    const existingLock = processingLock.get(senderId);
+    if (existingLock) {
+      existingLock.queue.push(initialMessage);
+      log.info(`[sync-webhook] Burst kuyruğa eklendi`, { senderId, queueLen: existingLock.queue.length });
+      return null;
+    }
+    preCreatedLock = { queue: [] };
+    processingLock.set(senderId, preCreatedLock);
   }
 
-  const lockEntry = { queue: [] };
-  processingLock.set(senderId, lockEntry);
+  const lockEntry = preCreatedLock;
 
   try {
     let pending = [initialMessage];
@@ -458,16 +466,20 @@ app.post('/webhook/whatsapp', async (req, res) => {
       return res.json({ reply: '', replies: [] });
     }
 
-    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    // ── BURST COALESCE: Lock kontrolü + oluşturma TÜM async işlemlerden ÖNCE ──
     const existingWaLock = processingLock.get(senderId);
     if (existingWaLock) {
       existingWaLock.queue.push(messageText);
-      log.info(`[whatsapp] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingWaLock.queue.length });
+      log.info(`[whatsapp] Burst kuyruğa eklendi`, { senderId, queueLen: existingWaLock.queue.length });
       return res.json({ reply: '', replies: [] });
     }
+    // Lock'u HEMEN oluştur — await'lerden önce, böylece sonraki requestler kuyruğa girer
+    const waLockEntry = { queue: [] };
+    processingLock.set(senderId, waLockEntry);
 
-    // Duplicate kontrolü
+    // Duplicate kontrolü (lock zaten var, sonraki mesajlar kuyruğa girecek)
     if (await isDuplicate(senderId, messageText)) {
+      processingLock.delete(senderId);
       return res.json({ reply: '', replies: [] });
     }
 
@@ -514,7 +526,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
       await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
       return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
-    });
+    }, waLockEntry);
 
     if (aiResponse === null) {
       // Mesaj birleştirildi, bu HTTP isteğine sessizce 200 dön
@@ -569,24 +581,28 @@ app.post('/webhook/manychat', async (req, res) => {
       });
     }
 
-    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    // ── BURST COALESCE: Lock kontrolü + oluşturma TÜM async işlemlerden ÖNCE ──
     const existingMcLock = processingLock.get(senderId);
     if (existingMcLock) {
       existingMcLock.queue.push(messageText);
-      log.info(`[manychat] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingMcLock.queue.length });
+      log.info(`[manychat] Burst kuyruğa eklendi`, { senderId, queueLen: existingMcLock.queue.length });
       return res.json({
         version: "v2",
         content: { type: channelType, messages: [] }
       });
     }
+    // Lock'u HEMEN oluştur — await'lerden önce
+    const mcLockEntry = { queue: [] };
+    processingLock.set(senderId, mcLockEntry);
 
-    // Duplicate kontrolü
+    // Duplicate kontrolü (lock zaten var, sonraki mesajlar kuyruğa girecek)
     if (await isDuplicate(senderId, messageText)) {
+      processingLock.delete(senderId);
       return res.json({
         version: "v2",
         content: {
           type: channelType,
-          messages: [] // Boş içerik dönerek duplicate cevabı engelle
+          messages: []
         }
       });
     }
@@ -635,7 +651,7 @@ app.post('/webhook/manychat', async (req, res) => {
       await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
       return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
-    });
+    }, mcLockEntry);
 
     if (aiResponse === null) {
       return res.json({
@@ -737,17 +753,21 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
 
     log.info('[autoresponder] Mesaj alındı', { senderId, len: messageText.length });
 
-    // ── BURST COALESCE: Lock kontrolü TÜM async işlemlerden ÖNCE ──
+    // ── BURST COALESCE: Lock kontrolü + oluşturma TÜM async işlemlerden ÖNCE ──
     // Bu sayede 2. ve 3. mesajlar hiç beklemeden kuyruğa girer
-    const existingLock = processingLock.get(senderId);
-    if (existingLock) {
-      existingLock.queue.push(messageText);
-      log.info(`[autoresponder] Burst kuyruğa eklendi (lock öncesi)`, { senderId, queueLen: existingLock.queue.length });
+    const existingArLock = processingLock.get(senderId);
+    if (existingArLock) {
+      existingArLock.queue.push(messageText);
+      log.info(`[autoresponder] Burst kuyruğa eklendi`, { senderId, queueLen: existingArLock.queue.length });
       res.set('Content-Type', 'application/json; charset=utf-8');
       return res.json({ reply: '', replies: [] });
     }
+    // Lock'u HEMEN oluştur — await'lerden önce
+    const arLockEntry = { queue: [] };
+    processingLock.set(senderId, arLockEntry);
 
     if (await isDuplicate(senderId, messageText)) {
+      processingLock.delete(senderId);
       res.set('Content-Type', 'application/json; charset=utf-8');
       return res.json({ reply: '', replies: [] });
     }
@@ -798,7 +818,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       triggerAudit(senderId);
       
       return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
-    });
+    }, arLockEntry);
 
     if (aiResponse === null) {
       res.set('Content-Type', 'application/json; charset=utf-8');
