@@ -683,7 +683,7 @@ function renderCustomersList() {
         
         tr.innerHTML = `
             <td style="padding: 15px;">${chat.sender_id}</td>
-            <td style="padding: 15px;"><span class="mini-badge status-${status.replace(/\\s+/g, '-').toLowerCase()}">${status}</span></td>
+            <td style="padding: 15px;"><span class="mini-badge status-${status.replace(/\s+/g, '-').toLowerCase()}">${status}</span></td>
             <td style="padding: 15px;">${priority}</td>
             <td style="padding: 15px;">${timeString}</td>
         `;
