@@ -739,30 +739,32 @@ textarea.form-control {
 }/* Portal Menu */
 .portal-menu {
     display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    max-width: 400px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    max-width: 600px;
 }
 .portal-btn {
     background: #ffffff;
     border: 1px solid var(--border);
-    padding: 25px;
-    border-radius: 16px;
-    font-size: 1.2rem;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%; /* Kusursuz tam yuvarlak */
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-main);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 20px;
+    justify-content: center;
+    gap: 15px;
     cursor: pointer;
     transition: all 0.3s;
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 .portal-btn i {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: var(--primary);
-    width: 40px;
 }
 .portal-btn:hover {
     transform: translateY(-2px);

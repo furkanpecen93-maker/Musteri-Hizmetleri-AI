@@ -604,12 +604,15 @@ function switchView(viewName) {
     document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
     
-    document.getElementById('view-' + viewName).style.display = viewName === 'messages' ? 'block' : 'block';
-    if (viewName === 'messages') {
-        document.getElementById('view-' + viewName).style.display = 'flex';
+    const viewEl = document.getElementById('view-' + viewName);
+    if (viewEl) {
+        viewEl.style.display = viewName === 'messages' ? 'flex' : 'block';
     }
     
-    document.getElementById('nav-' + viewName).classList.add('active');
+    const navEl = document.getElementById('nav-' + viewName);
+    if (navEl) {
+        navEl.classList.add('active');
+    }
     
     if (viewName === 'dashboard') {
         fetchDashboardMetrics();
