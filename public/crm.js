@@ -32,10 +32,27 @@ async function fetchChats() {
 
 function renderChatList() {
     const searchTerm = searchInput.value.toLowerCase();
-    const filteredChats = activeChats.filter(chat => 
-        chat.sender_id.toLowerCase().includes(searchTerm) || 
-        chat.content.toLowerCase().includes(searchTerm)
-    );
+    const filteredChats = activeChats.filter(chat => {
+        const matchesSearch = chat.sender_id.toLowerCase().includes(searchTerm) || chat.content.toLowerCase().includes(searchTerm);
+        
+        let matchesStatus = true;
+        let matchesPriority = true;
+        let matchesTags = true;
+        
+        if (chat.profile) {
+            if (activeFilters.status.length > 0) {
+                matchesStatus = activeFilters.status.includes(chat.profile.status);
+            }
+            if (activeFilters.priority.length > 0) {
+                matchesPriority = activeFilters.priority.includes(chat.profile.priority);
+            }
+            if (activeFilters.tags.length > 0) {
+                matchesTags = activeFilters.tags.every(t => chat.profile.tags && chat.profile.tags.includes(t));
+            }
+        }
+        
+        return matchesSearch && matchesStatus && matchesPriority && matchesTags;
+    });
 
     chatCountEl.textContent = filteredChats.length;
     chatListEl.innerHTML = '';
@@ -54,6 +71,19 @@ function renderChatList() {
         chatItem.className = `chat-item ${isActive ? 'active' : ''} ${isPaused ? 'paused' : ''}`;
         chatItem.onclick = () => selectChat(chat.sender_id);
 
+        let profileBadgesHTML = '';
+        if (chat.profile) {
+            profileBadgesHTML += `<span class="mini-badge status-${chat.profile.status.replace(/\s+/g, '-').toLowerCase()}">${chat.profile.status}</span>`;
+            if (chat.profile.tags && chat.profile.tags.length > 0) {
+                chat.profile.tags.slice(0, 2).forEach(t => {
+                    profileBadgesHTML += `<span class="mini-badge tag-badge-mini">${t}</span>`;
+                });
+                if (chat.profile.tags.length > 2) {
+                    profileBadgesHTML += `<span class="mini-badge tag-badge-mini">+${chat.profile.tags.length - 2}</span>`;
+                }
+            }
+        }
+
         chatItem.innerHTML = `
             <div class="avatar"><i class="fa-solid ${isPaused ? 'fa-user-clock' : 'fa-user'}"></i></div>
             <div class="chat-item-info">
@@ -61,6 +91,7 @@ function renderChatList() {
                     <span class="chat-name">${chat.sender_id}</span>
                     <span class="chat-time">${timeString}</span>
                 </div>
+                <div class="chat-item-badges">${profileBadgesHTML}</div>
                 <div class="chat-preview">${isPaused ? '⏸️ (Susturuldu) ' : ''}${chat.role === 'assistant' ? 'AI: ' : ''}${chat.content}</div>
             </div>
         `;
@@ -183,6 +214,45 @@ searchInput.addEventListener('input', renderChatList);
 
 // Profile Logic
 let currentTags = [];
+let activeFilters = { tags: [], status: [], priority: [] };
+
+window.addFilter = function(type, value) {
+    if (!activeFilters[type].includes(value)) {
+        activeFilters[type].push(value);
+        renderActiveFilters();
+        renderChatList();
+    }
+};
+
+window.removeFilter = function(type, value) {
+    activeFilters[type] = activeFilters[type].filter(item => item !== value);
+    renderActiveFilters();
+    renderChatList();
+};
+
+function renderActiveFilters() {
+    const container = document.getElementById('active-filters-container');
+    container.innerHTML = '';
+    
+    let hasFilters = false;
+    
+    for (const type of ['status', 'priority', 'tags']) {
+        activeFilters[type].forEach(val => {
+            hasFilters = true;
+            const chip = document.createElement('div');
+            chip.className = 'filter-chip';
+            chip.innerHTML = `<span>${val}</span> <i class="fa-solid fa-times" onclick="removeFilter('${type}', '${val}')"></i>`;
+            container.appendChild(chip);
+        });
+    }
+    
+    if (hasFilters) {
+        container.style.display = 'flex';
+    } else {
+        container.style.display = 'none';
+    }
+}
+
 const profileStatusEl = document.getElementById('profile-status');
 const profilePriorityEl = document.getElementById('profile-priority');
 const tagInputEl = document.getElementById('tag-input');
@@ -213,7 +283,7 @@ function renderTags() {
     currentTags.forEach(tag => {
         const badge = document.createElement('div');
         badge.className = 'tag-badge';
-        badge.innerHTML = `<span>${tag}</span> <i class="fa-solid fa-xmark" onclick="removeTag('${tag}')"></i>`;
+        badge.innerHTML = `<span onclick="addFilter('tags', '${tag}')" style="cursor: pointer;" title="Filtrele">${tag}</span> <i class="fa-solid fa-xmark" onclick="removeTag('${tag}')"></i>`;
         tagsListEl.appendChild(badge);
     });
 }

@@ -843,7 +843,29 @@ app.get('/api/crm/chats', async (req, res) => {
       }
     }
 
-    res.json({ chats: Array.from(chatsMap.values()), activeTakeovers });
+    const chatsArray = Array.from(chatsMap.values());
+    const senderIds = chatsArray.map(c => c.sender_id);
+    
+    let profilesMap = new Map();
+    if (senderIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await crmSupabase
+            .from('customer_profiles')
+            .select('sender_id, tags, status, priority')
+            .in('sender_id', senderIds);
+            
+        if (profilesData && !profilesError) {
+            for (const p of profilesData) {
+                profilesMap.set(p.sender_id, p);
+            }
+        }
+    }
+    
+    for (const chat of chatsArray) {
+        const p = profilesMap.get(chat.sender_id);
+        chat.profile = p ? { tags: p.tags || [], status: p.status || 'Yeni Müşteri', priority: p.priority || 'Normal' } : { tags: [], status: 'Yeni Müşteri', priority: 'Normal' };
+    }
+
+    res.json({ chats: chatsArray, activeTakeovers });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

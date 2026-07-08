@@ -20,6 +20,9 @@
                 <i class="fa-solid fa-search"></i>
                 <input type="text" id="search-input" placeholder="Müşteri ara...">
             </div>
+            <div id="active-filters-container" class="active-filters-container" style="display: none;">
+                <!-- Filter chips will be injected here -->
+            </div>
             <div class="chat-list" id="chat-list">
                 <!-- Chat items will be injected here -->
                 <div class="loading-spinner">Yükleniyor...</div>
@@ -64,9 +67,11 @@
             
             <div class="profile-content">
                 <div class="form-group">
-                    <label>Durum</label>
+                    <label>Durum <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('status', document.getElementById('profile-status').value)" title="Bu durumu filtreye ekle"></i></label>
                     <select id="profile-status" class="form-control">
-                        <option value="Yeni">Yeni</option>
+                        <option value="Yeni Müşteri">Yeni Müşteri</option>
+                        <option value="Eski Müşteri">Eski Müşteri</option>
+                        <option value="Sıcak Müşteri (Sordu Almadı)">Sıcak Müşteri (Sordu Almadı)</option>
                         <option value="Sipariş Aşamasında">Sipariş Aşamasında</option>
                         <option value="Kargo Bekliyor">Kargo Bekliyor</option>
                         <option value="Tamamlandı">Tamamlandı</option>
@@ -74,7 +79,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Öncelik</label>
+                    <label>Öncelik <i class="fa-solid fa-filter" style="cursor: pointer; margin-left: 5px; color: var(--accent);" onclick="addFilter('priority', document.getElementById('profile-priority').value)" title="Bu önceliği filtreye ekle"></i></label>
                     <select id="profile-priority" class="form-control">
                         <option value="Yüksek">Yüksek</option>
                         <option value="Orta">Orta</option>
