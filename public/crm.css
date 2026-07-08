@@ -1,15 +1,16 @@
 :root {
-    --bg-dark: #0f172a;
-    --bg-panel: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+    --bg-dark: #f8fafc;
+    --bg-panel: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
     --accent: #3b82f6;
     --accent-hover: #2563eb;
     --success: #10b981;
     --danger: #ef4444;
-    --border: rgba(255, 255, 255, 0.1);
-    --glass-bg: rgba(30, 41, 59, 0.7);
+    --border: #e2e8f0;
+    --glass-bg: rgba(255, 255, 255, 0.9);
 }
+
 
 * {
     margin: 0;
@@ -24,8 +25,8 @@ body {
     height: 100vh;
     overflow: hidden;
     background-image: 
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
 }
 
 .app-container {
@@ -89,7 +90,7 @@ body {
 .search-box input {
     width: 100%;
     padding: 12px 12px 12px 40px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f1f5f9;
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text-main);
@@ -100,7 +101,7 @@ body {
 
 .search-box input:focus {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.1);
+    background: #ffffff;
 }
 
 .chat-list {
@@ -110,7 +111,7 @@ body {
 
 .chat-item {
     padding: 15px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -119,7 +120,8 @@ body {
 }
 
 .chat-item:hover, .chat-item.active {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.03);
+    transform: translateX(4px);
 }
 
 .chat-item.active {
@@ -178,7 +180,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(241, 245, 249, 0.5);
 }
 
 .chat-header {
@@ -309,12 +311,14 @@ body {
 }
 
 .message.user .message-content {
-    background: rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    border: 1px solid var(--border);
     border-bottom-left-radius: 4px;
 }
 
 .message.assistant .message-content {
     background: var(--accent);
+    color: #ffffff;
     border-bottom-right-radius: 4px;
 }
 
@@ -346,12 +350,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 /* Profile Sidebar */
@@ -389,7 +393,7 @@ body {
 .form-control {
     width: 100%;
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text-main);
@@ -400,7 +404,8 @@ body {
 
 .form-control:focus {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 select.form-control option {
@@ -421,7 +426,7 @@ textarea.form-control {
 #tag-input {
     width: 100%;
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text-main);
@@ -431,6 +436,7 @@ textarea.form-control {
 
 #tag-input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .tags-list {
@@ -538,7 +544,7 @@ textarea.form-control {
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px 15px;
-    background: rgba(0, 0, 0, 0.1);
+    background: #f8fafc;
     border-bottom: 1px solid var(--border);
 }
 
@@ -576,16 +582,16 @@ textarea.form-control {
     font-weight: 600;
 }
 
-.status-yeni-müşteri { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.status-eski-müşteri { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-.status-sıcak-müşteri-\(sordu-almadı\) { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.status-sipariş-aşamasında { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-.status-kargo-bekliyor { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
-.status-tamamlandı { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.status-yeni-müşteri { background: #dbeafe; color: #1e40af; }
+.status-eski-müşteri { background: #f1f5f9; color: #475569; }
+.status-sıcak-müşteri-\(sordu-almadı\) { background: #fef3c7; color: #92400e; }
+.status-sipariş-aşamasında { background: #ede9fe; color: #5b21b6; }
+.status-kargo-bekliyor { background: #fce7f3; color: #9d174d; }
+.status-tamamlandı { background: #d1fae5; color: #065f46; }
 
 .tag-badge-mini {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
+    background: #e0e7ff;
+    color: #3730a3;
 }
 
 /* Chat Input Area */
@@ -600,7 +606,7 @@ textarea.form-control {
 
 #chat-input {
     flex: 1;
-    background: rgba(15, 23, 42, 0.6);
+    background: #ffffff;
     border: 1px solid var(--border);
     color: var(--text-main);
     padding: 14px 20px;
