@@ -126,42 +126,8 @@
                 <div class="empty-state">
                     <i class="fa-solid fa-comments"></i>
                     <p>Mesajları görmek için bir sohbet seçin</p>
-                <aside class="sidebar">
-                    <div class="sidebar-header">
-                        <h2><i class="fa-solid fa-robot"></i> AI Asistan</h2>
-                        <span class="badge" id="chat-count">0</span>
-                    </div>
-                    <div class="search-box">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="search-input" placeholder="Müşteri ara...">
-                    </div>
-                    <div id="active-filters-container" class="active-filters-container" style="display: none;"></div>
-                    <div class="chat-list" id="chat-list">
-                        <div class="loading-spinner">Yükleniyor...</div>
-                    </div>
-                </aside>
-
-                <main class="chat-area">
-                    <div class="chat-header" id="chat-header" style="display: none;">
-                        <div class="chat-user-info">
-                            <button id="mobile-back-btn" class="btn btn-icon" style="display: none;"><i class="fa-solid fa-arrow-left"></i></button>
-                            <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                            <div class="details">
-                                <h3 id="current-chat-name">Seçili Müşteri Yok</h3>
-                                <span class="status online" id="bot-status-text">Bot Aktif</span>
-                            </div>
-                        </div>
-                        <div class="chat-actions">
-                            <button id="toggle-pause-btn" class="btn btn-pause"><i class="fa-solid fa-pause"></i> Botu Sustur</button>
-                        </div>
-                    </div>
-
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="empty-state">
-                            <i class="fa-solid fa-comments"></i>
-                            <p>Mesajları görmek için bir sohbet seçin</p>
-                        </div>
-                    </div>
+                </div>
+            </div>
                     
                     <div class="chat-input-area" id="chat-input-area" style="display: none;">
                         <input type="text" id="chat-input" placeholder="Müşteriye bir mesaj yazın..." autocomplete="off">
@@ -202,12 +168,7 @@
                         <!-- Messages inserted via JS -->
                     </div>
 
-                    <!-- Chat Input -->
-                    <div class="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="Müşteriye manuel cevap yazın (AI devredışı kalır)...">
-                        <button id="send-msg-btn"><i class="fa-solid fa-paper-plane"></i></button>
-                    </div>
-                </div>
+                </aside>
             </div>
         </div>
 
