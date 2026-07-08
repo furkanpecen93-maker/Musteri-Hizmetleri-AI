@@ -533,7 +533,7 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
       await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+      return isFirstMessageEver ? GREETING_MESSAGE + '\n\n' + aiResponseText : aiResponseText;
     }, waLockEntry);
 
     if (aiResponse === null) {
@@ -658,7 +658,7 @@ app.post('/webhook/manychat', async (req, res) => {
       
       await addMessage(senderId, 'assistant', aiResponseText);
       triggerAudit(senderId);
-      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+      return isFirstMessageEver ? GREETING_MESSAGE + '\n\n' + aiResponseText : aiResponseText;
     }, mcLockEntry);
 
     if (aiResponse === null) {
@@ -853,7 +853,7 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
     await addMessage(senderId, 'assistant', aiResponseText);
     triggerAudit(senderId);
     
-    const finalResponse = isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+    const finalResponse = isFirstMessageEver ? GREETING_MESSAGE + '\n\n' + aiResponseText : aiResponseText;
 
     log.info('[autoresponder] Cevap üretildi', { senderId, msgCount: allMessages.length });
 
