@@ -58,6 +58,55 @@ Toptan ihtiyaçlarınız için size en uygun ürünleri sunmaktan memnuniyet duy
 
 Size nasıl yardımcı olabiliriz?`;
 
+const CATALOG_MESSAGE = `Tabii ki efendim! 😊 Tüm ürünlerimizi fiyatlarıyla birlikte aşağıdaki katalog linkinden inceleyebilirsiniz:
+
+👉 https://musteri-hizmetleri-ai-production-f980.up.railway.app/katalog
+
+Beğendiğiniz ürünler hakkında detaylı bilgi almak isterseniz bana yazabilirsiniz.`;
+
+/**
+ * Müşterinin mesajının genel bir katalog/ürün görme talebi olup olmadığını kontrol et.
+ * Belirli bir ürün adı/kodu soranları (örn: "P-200 fiyatı", "siyah tayt") yakalamaz,
+ * sadece genel "ürünleri görmek istiyorum" tarzı mesajları yakalar.
+ */
+function isCatalogRequest(message) {
+  const normalized = message
+    .toLowerCase()
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[şŞ]/g, 's')
+    .replace(/[çÇ]/g, 'c')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[üÜ]/g, 'u')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[?!.,;:'"]/g, '')
+    .trim();
+
+  const catalogPatterns = [
+    /urunler/,
+    /urunleri\s*(gorebilir|gormek|gorsem|goreyim|gosterir|bakmak|bakabilir)/,
+    /urun\s*(hakkinda|icin)\s*(bilgi|detay)/,
+    /urunleriniz/,
+    /modelleriniz/,
+    /modelleri\s*(gorebilir|gormek|gorsem)/,
+    /neleriniz\s*var/,
+    /ne\s*(satiyorsunuz|uretiyorsunuz)/,
+    /katalog/,
+    /urun\s*katalogu/,
+    /fiyat\s*listesi/,
+    /toptan\s*fiyat/,
+    /koleksiyonunuz/,
+    /koleksiyonu\s*(gorebilir|gormek|gorsem)/,
+    /cesitleriniz/,
+    /ne\s*gibi\s*urunler/,
+    /urun\s*cesitleri/,
+    /^urunler$/,
+    /^katalog$/,
+    /^fiyatlar$/,
+  ];
+
+  return catalogPatterns.some(pattern => pattern.test(normalized));
+}
+
 const fs = require('fs');
 const path = require('path');
 
@@ -307,6 +356,30 @@ async function processMessage(senderId, initialMessage, platform) {
         }
       }
 
+      // ═══ KATALOG TALEBİ BYPASS: AI'ya gitmeden direkt katalog linki gönder ═══
+      if (isCatalogRequest(combinedMessage)) {
+        log.info('[process] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId, platform });
+        const catalogResponse = CATALOG_MESSAGE;
+        addMessage(senderId, 'assistant', catalogResponse);
+        
+        // Analytics
+        trackEvent(senderId, 'catalog_request_bypass', platform, {
+          original_message: combinedMessage
+        }).catch(() => {});
+        
+        // Followup kuyruğuna ekle
+        enqueueFollowup(senderId, platform).catch(() => {});
+        
+        if (platform === 'instagram') {
+          await sendInstagramMessage(senderId, catalogResponse);
+        } else {
+          await sendMessengerMessage(senderId, catalogResponse);
+        }
+        
+        log.info('[process] Katalog linki gönderildi', { senderId, platform });
+        return;
+      }
+
       // AI cevap üret (süre ölç)
       const aiStartTime = Date.now();
       const currentState = await getState(senderId);
@@ -471,6 +544,20 @@ app.post('/webhook/whatsapp', async (req, res) => {
       const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
       
       await addMessage(senderId, 'user', combinedMsg);
+
+      // ═══ KATALOG TALEBİ BYPASS (WhatsApp) ═══
+      if (isCatalogRequest(combinedMsg)) {
+        log.info('[whatsapp] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId });
+        trackEvent(senderId, 'catalog_request_bypass', 'whatsapp', { original_message: combinedMsg }).catch(() => {});
+        enqueueFollowup(senderId, 'whatsapp').catch(() => {});
+        if (isFirstMessageEver) {
+          await markUserAsGreeted(senderId);
+          await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+        }
+        await addMessage(senderId, 'assistant', CATALOG_MESSAGE);
+        return isFirstMessageEver ? [GREETING_MESSAGE, CATALOG_MESSAGE] : CATALOG_MESSAGE;
+      }
+
       const currentState = await getState(senderId);
       currentState.platform = 'whatsapp';
       const [catalog, history] = await Promise.all([
@@ -581,6 +668,20 @@ app.post('/webhook/manychat', async (req, res) => {
       const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
       
       await addMessage(senderId, 'user', combinedMsg);
+
+      // ═══ KATALOG TALEBİ BYPASS (ManyChat) ═══
+      if (isCatalogRequest(combinedMsg)) {
+        log.info('[manychat] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId });
+        trackEvent(senderId, 'catalog_request_bypass', channelType, { original_message: combinedMsg }).catch(() => {});
+        enqueueFollowup(senderId, channelType).catch(() => {});
+        if (isFirstMessageEver) {
+          await markUserAsGreeted(senderId);
+          await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+        }
+        await addMessage(senderId, 'assistant', CATALOG_MESSAGE);
+        return isFirstMessageEver ? [GREETING_MESSAGE, CATALOG_MESSAGE] : CATALOG_MESSAGE;
+      }
+
       const currentState = await getState(senderId);
       currentState.platform = channelType;
       const [catalog, history] = await Promise.all([
@@ -735,6 +836,20 @@ app.all(['/autoresponder', '/webhook/whatsapp/autoresponder'], async (req, res) 
       const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
       
       await addMessage(senderId, 'user', combinedMsg);
+
+      // ═══ KATALOG TALEBİ BYPASS (AutoResponder) ═══
+      if (isCatalogRequest(combinedMsg)) {
+        log.info('[autoresponder] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId });
+        trackEvent(senderId, 'catalog_request_bypass', 'whatsapp', { original_message: combinedMsg }).catch(() => {});
+        enqueueFollowup(senderId, 'whatsapp').catch(() => {});
+        if (isFirstMessageEver) {
+          await markUserAsGreeted(senderId);
+          await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+        }
+        await addMessage(senderId, 'assistant', CATALOG_MESSAGE);
+        return isFirstMessageEver ? [GREETING_MESSAGE, CATALOG_MESSAGE] : CATALOG_MESSAGE;
+      }
+
       const [catalog, history] = await Promise.all([
         getCatalog(),
         getHistory(senderId)
