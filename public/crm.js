@@ -58,7 +58,7 @@ function renderChatList() {
     chatListEl.innerHTML = '';
 
     if (filteredChats.length === 0) {
-        chatListEl.innerHTML = '<div class="loading-spinner">Sohbet bulunamadÄ±.</div>';
+        chatListEl.innerHTML = '<div class="loading-spinner">Sohbet bulunamadı.</div>';
         return;
     }
 
@@ -92,7 +92,7 @@ function renderChatList() {
                     <span class="chat-time">${timeString}</span>
                 </div>
                 <div class="chat-item-badges">${profileBadgesHTML}</div>
-                <div class="chat-preview">${isPaused ? 'â¸ï¸ (Susturuldu) ' : ''}${chat.role === 'assistant' ? 'AI: ' : ''}${chat.content}</div>
+                <div class="chat-preview">${isPaused ? '⏸️ (Susturuldu) ' : ''}${chat.role === 'assistant' ? 'AI: ' : ''}${chat.content}</div>
             </div>
         `;
         chatListEl.appendChild(chatItem);
@@ -104,7 +104,7 @@ async function selectChat(senderId) {
     currentChatNameEl.textContent = senderId;
     chatHeaderEl.style.display = 'flex';
     
-    // Mobil iÃ§in class ekle
+    // Mobil için class ekle
     document.querySelector('.app-container').classList.add('mobile-chat-active');
     
     updateHeaderStatus();
@@ -127,13 +127,31 @@ if (mobileBackBtn) {
     };
 }
 
+const mobileProfileBtn = document.getElementById('mobile-profile-btn');
+const mobileOverlay = document.getElementById('mobile-overlay');
+const profileSidebar = document.getElementById('profile-sidebar');
+
+if (mobileProfileBtn) {
+    mobileProfileBtn.onclick = () => {
+        profileSidebar.classList.add('mobile-open');
+        mobileOverlay.classList.add('active');
+    };
+}
+
+if (mobileOverlay) {
+    mobileOverlay.onclick = () => {
+        profileSidebar.classList.remove('mobile-open');
+        mobileOverlay.classList.remove('active');
+    };
+}
+
 function updateHeaderStatus() {
     const isPaused = activeTakeovers[currentSelectedSenderId];
     if (isPaused) {
         botStatusTextEl.textContent = 'Bot Susturuldu';
         botStatusTextEl.className = 'status offline';
         togglePauseBtn.className = 'btn btn-resume';
-        togglePauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Botu AktifleÅŸtir';
+        togglePauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> Botu Aktifleştir';
     } else {
         botStatusTextEl.textContent = 'Bot Aktif';
         botStatusTextEl.className = 'status online';
@@ -164,7 +182,7 @@ function renderMessages(messages) {
         chatMessagesEl.innerHTML = `
             <div class="empty-state">
                 <i class="fa-solid fa-comments"></i>
-                <p>Mesaj bulunamadÄ±.</p>
+                <p>Mesaj bulunamadı.</p>
             </div>
         `;
         return;
