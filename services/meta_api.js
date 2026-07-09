@@ -18,11 +18,31 @@ async function sendMessage(recipientId, messageText, platform = 'messenger') {
     return false;
   }
 
+  // ═══ SON SAVUNMA HATTI: Dahili düşünce sızıntısı kontrolü ═══
+  // Gemini bazen "THOUGHT", "THINKING" gibi iç monolog yazabiliyor.
+  // Bu kontrol, gemini.js'deki sanitize'dan kaçan her şeyi yakalar.
+  let cleanedMessage = messageText;
+  
+  // THOUGHT/THINKING/REASONING blokları ve sonrasını temizle
+  cleanedMessage = cleanedMessage.replace(/(?:^|\n)\s*(?:\[|\*|\()?\s*(?:THOUGHT|THINKING|REASONING|ANALYSIS|DÜŞÜNCE|ANALİZ|İÇ\s*MONOLOG|INTERNAL|NOTE\s*TO\s*SELF)\s*(?:\]|\*|\))?\s*[:\-]?\s*[\s\S]*?(?=\n\n|$)/gi, '');
+  
+  // "I should...", "Since there's no...", "The user is asking..." gibi İngilizce iç monolog cümleleri
+  cleanedMessage = cleanedMessage.replace(/(?:^|\n)\s*(?:Since there'?s|I should|I need to|The user is|The customer is|Based on the rules|According to|Let me think|I will respond|I notice that|rule \d)[^\n]*(?:\n(?!\n)[^\n]*)*/gi, '');
+  
+  // Çoklu boş satırları temizle
+  cleanedMessage = cleanedMessage.replace(/\n{3,}/g, '\n\n').trim();
+  
+  // Eğer mesaj tamamen temizlendiyse log'la ve fallback kullan
+  if (!cleanedMessage || cleanedMessage.length < 5) {
+    log.error(`[meta_api] ⚠️ THOUGHT LEAK TESPİT EDİLDİ VE ENGELLENDİ! Orijinal mesaj:`, messageText.substring(0, 300));
+    cleanedMessage = 'Mesajınızı aldım efendim. Sizi ilgili ekip arkadaşlarıma yönlendiriyorum, en kısa sürede size dönüş yapacaklar.';
+  }
+
   // Instagram mesajları 1000 karakter limiti var
   const maxLen = platform === 'instagram' ? 1000 : 2000;
-  const trimmedText = messageText.length > maxLen 
-    ? messageText.substring(0, maxLen - 3) + '...' 
-    : messageText;
+  const trimmedText = cleanedMessage.length > maxLen 
+    ? cleanedMessage.substring(0, maxLen - 3) + '...' 
+    : cleanedMessage;
 
   const url = `${META_BASE_URL}/me/messages?access_token=${config.metaPageAccessToken}`;
   

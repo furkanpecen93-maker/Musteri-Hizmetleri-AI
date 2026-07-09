@@ -17,13 +17,29 @@ const fetch = require('node-fetch');
 
 function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
   const devretRegex = /\[DEVRET\]|\(DEVRET\)|\[SİPARİŞ\]|\(SİPARİŞ\)|\[SIPARIS\]|\(SIPARIS\)/gi;
-  const cleanedText = aiResponseText.replace(devretRegex, '').trim();
+  let cleanedText = aiResponseText.replace(devretRegex, '').trim();
   
   if (cleanedText !== aiResponseText.trim()) {
     // The tag was found and removed, so we should notify telegram
     sendTelegramNotification(senderId, userMessage);
     // Ekibe devredilen müşteriye hatırlatma gönderilmemeli
     cancelFollowup(senderId).catch(() => {});
+  }
+  
+  // ═══ DAHİLİ DÜŞÜNCE SIZINTISI TEMİZLEME (tüm platformlar) ═══
+  // THOUGHT/THINKING/REASONING blokları
+  cleanedText = cleanedText.replace(/(?:^|\n)\s*(?:\[|\*|\()?\s*(?:THOUGHT|THINKING|REASONING|ANALYSIS|DÜŞÜNCE|ANALİZ|İÇ\s*MONOLOG|INTERNAL|NOTE\s*TO\s*SELF)\s*(?:\]|\*|\))?\s*[:\-]?\s*[\s\S]*?(?=\n\n|$)/gi, '');
+  
+  // İngilizce iç monolog cümleleri (rule referansları dahil)
+  cleanedText = cleanedText.replace(/(?:^|\n)\s*(?:Since there'?s|I should|I need to|The user is|The customer is|Based on the rules|According to|Let me think|I will respond|I notice that|I can see that|rule \d)[^\n]*(?:\n(?!\n)[^\n]*)*/gi, '');
+  
+  // Çoklu boş satırları temizle
+  cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n').trim();
+  
+  // Fallback: tamamen boşaldıysa
+  if (!cleanedText || cleanedText.length < 5) {
+    log.warn('[process] ⚠️ THOUGHT LEAK tespit edildi ve engellendi!', { senderId, original: aiResponseText.substring(0, 200) });
+    cleanedText = 'Mesajınızı aldım efendim. Sizi ilgili ekip arkadaşlarıma yönlendiriyorum, en kısa sürede size dönüş yapacaklar.';
   }
   
   return cleanedText;
