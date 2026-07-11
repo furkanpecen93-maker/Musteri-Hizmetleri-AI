@@ -128,6 +128,38 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
         },
         required: ["amount"]
       }
+    },
+    {
+      name: "siparis_hesapla",
+      description: "Müşterinin istediği ürünlerin toplam fiyatını, kargo dahil (varsa) HATA YAPMADAN HESAPLAR. Müşteri fiyat hesaplaması veya sipariş özeti istediğinde, kendi başına matematik YAPMADAN KESİNLİKLE bu aracı kullan.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          sepet: {
+            type: "ARRAY",
+            description: "Müşterinin almak istediği ürünlerin listesi.",
+            items: {
+              type: "OBJECT",
+              properties: {
+                urun_kodu: {
+                  type: "STRING",
+                  description: "Katalogdaki ürün kodu (örn: 23-B1)"
+                },
+                seri_adedi: {
+                  type: "NUMBER",
+                  description: "Kaç seri alınacağı (örn: 5)"
+                }
+              },
+              required: ["urun_kodu", "seri_adedi"]
+            }
+          },
+          anlasmali_kargo: {
+            type: "BOOLEAN",
+            description: "Müşteri 'bizim kargomuzla gelsin' (anlaşmalı kargo) isterse true, 'kendi kargomla' derse veya belirtmezse false gönder."
+          }
+        },
+        required: ["sepet", "anlasmali_kargo"]
+      }
     }]
   }];
 
@@ -265,6 +297,85 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     if (!data) {
       return { text: 'Siparişinizi kaydettik, teşekkür ederiz.', stateUpdates: {}, toolCallInfo };
     }
+  } else if (functionCall && functionCall.name === "siparis_hesapla") {
+    log.info(`[gemini] HESAPLAMA YAPILIYOR: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
+    const args = functionCall.args;
+    let genelToplam = 0;
+    let urunTutari = 0;
+    let toplamSeri = 0;
+    let hesapDetaylari = [];
+    
+    // Sepetteki ürünleri hesapla
+    if (args.sepet && Array.isArray(args.sepet)) {
+      for (const item of args.sepet) {
+        const result = searchProducts(item.urun_kodu);
+        if (result && result.length > 0) {
+          const urun = result[0]; // En iyi eşleşme
+          const seriAdedi = item.seri_adedi || 1;
+          
+          let bedenSayisi = 1;
+          if (urun.bedenler) {
+            bedenSayisi = urun.bedenler.split(/[-,\s]+/).filter(b => b.trim().length > 0).length || 1;
+          }
+          
+          const fiyatNum = urun.fiyat_tl ? parseFloat(urun.fiyat_tl.replace(/[^\d.]/g, '')) : 0;
+          const birSeriFiyati = bedenSayisi * fiyatNum;
+          const kalemTutari = birSeriFiyati * seriAdedi;
+          
+          urunTutari += kalemTutari;
+          toplamSeri += seriAdedi;
+          hesapDetaylari.push(`${urun.urun_kodu} (${urun.urun_adi}) - ${seriAdedi} Seri (${seriAdedi * bedenSayisi} adet) = ${kalemTutari} TL`);
+        } else {
+          hesapDetaylari.push(`${item.urun_kodu} stokta bulunamadı, fiyata eklenmedi.`);
+        }
+      }
+    }
+    
+    // Kargo hesapla (Anlaşmalı kargo ise seri başı 40 TL)
+    let kargoTutari = 0;
+    if (args.anlasmali_kargo) {
+      kargoTutari = toplamSeri * 40;
+    }
+    
+    genelToplam = urunTutari + kargoTutari;
+    
+    const hesapCevabi = {
+      basari: true,
+      urunler_tutari: urunTutari,
+      kargo_tutari: kargoTutari,
+      kargo_notu: args.anlasmali_kargo ? `(Anlaşmalı kargo ile gönderim: ${toplamSeri} seri * 40 TL)` : "(Müşterinin kendi kargosu ile gönderim, ücret yansıtılmadı)",
+      genel_toplam: genelToplam,
+      detaylar: hesapDetaylari,
+      ai_talimati: "Bu bilgileri müşteriye çok nazik ve DOĞAL bir Türkçe ile ilet. Matematik işlemi GÖSTERME, sadece sonucu söyle. Örneğin: 'Siparişinizin toplam ürün tutarı X TL, kargo ücretimiz Y TL, genel toplam Z TL tutmaktadır.'"
+    };
+
+    toolCallInfo = {
+      toolCalled: 'siparis_hesapla',
+      queryUsed: JSON.stringify(args)
+    };
+
+    // Modelin ilk fonksiyon çağrısını içeriğe ekle
+    payload.contents.push(data.candidates[0].content);
+    
+    // Bizim vereceğimiz cevabı functionResponse olarak ekle
+    payload.contents.push({
+      role: 'function',
+      parts: [{
+        functionResponse: {
+          name: "siparis_hesapla",
+          response: { 
+            name: "siparis_hesapla",
+            content: hesapCevabi
+          }
+        }
+      }]
+    });
+    
+    // İkinci kez API'ye istek at
+    data = await makeGeminiRequest(payload);
+    if (!data) {
+      return { text: 'Hesaplamanızı yaptım ancak bir sorun oluştu. Sizi arkadaşıma bağlıyorum. [DEVRET]', stateUpdates: {}, toolCallInfo };
+    }
   }
 
   try {
@@ -385,7 +496,7 @@ function buildSystemPrompt(catalogData, userState = {}) {
 ### İNSAN DESTEĞİNE DEVRETME KOŞULLARI (Gizli [DEVRET] Etiketi)
 Aşağıdaki senaryolardan biri gerçekleşirse, durumu kibarca anlat ve **cevabının en sonuna mutlaka \`[DEVRET]\` etiketini ekle.**
 1. **Tekleme / İhraç Fazlası:** Müşteri tekleme, seri sonu, defolu veya daha uygun fiyatlı stok sorarsa, güncel durum için ekibe yönlendir. (Örn: "...güncel tekleme stokları için sizi ekip arkadaşlarıma yönlendiriyorum. [DEVRET]")
-2. **Sipariş Verme:** Müşteri sipariş oluşturmak istediğinde (Örn: "Şundan 5 seri alacağım").
+2. **Sipariş Verme ve Fiyat Hesaplama (YENİ KURAL):** Müşteri sipariş oluşturmak veya tutar hesaplamak istediğinde (Örn: "Şundan 5 seri alacağım, kargo dahil ne kadar?") KESİNLİKLE kendi başına MATEMATİK YAPMA. Hemen \`siparis_hesapla\` fonksiyonunu çağır (kargo durumuna göre anlasmali_kargo true/false belirterek). Eğer müşteri sadece "Sipariş vermek istiyorum" diyorsa adet ve ürün iste, ardından hesapla aracıyla fiyatı sun ve onay al.
 3. **Özel Üretim (Fason):** Müşteri kendi markasına özel ürün ürettirmek isterse.
 4. **Büyük Müşteri (500+ Adet):** Çok yüksek adetli alım yapmak isteyenlere indirim vaadi vermeden ekibe devret.
 5. **Kriz / Şikayet / Güven Problemi:** Müşteri sinirliyse, dolandırılmaktan korkuyorsa veya katalog açılmıyorsa. (Sinirli müşteriye üzgün olduğunu belirt).

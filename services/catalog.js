@@ -47,8 +47,27 @@ function searchProducts(query) {
     return terms.every(term => targetText.includes(term));
   });
   
-  // En alakalı 5 sonucu dön ki payload çok büyümesin
-  return matches.slice(0, 5);
+  // En alakalı 5 sonucu dön ki payload çok büyümesin ve ek bilgileri hesapla
+  return matches.slice(0, 5).map(p => {
+    // Beden sayısını hesapla (örn: "S-M-L" -> 3)
+    let beden_sayisi = 1; // Default
+    if (p.bedenler) {
+      beden_sayisi = p.bedenler.split(/[-,\s]+/).filter(b => b.trim().length > 0).length || 1;
+    }
+    
+    // Fiyatı sayıya çevir
+    const fiyat_num = p.fiyat_tl ? parseFloat(p.fiyat_tl.replace(/[^\d.]/g, '')) : 0;
+    
+    // Seri fiyatı = beden sayısı * ürün fiyatı
+    const bir_seri_fiyati = !isNaN(fiyat_num) && fiyat_num > 0 ? (beden_sayisi * fiyat_num) : "Belirtilmemiş";
+    
+    return {
+      ...p,
+      beden_sayisi,
+      bir_seri_fiyati,
+      seri_bilgisi_notu: `1 seri alındığında ${beden_sayisi} adet alınmış olur.`
+    };
+  });
 }
 
 function clearCache() {
