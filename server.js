@@ -517,7 +517,7 @@ app.post('/webhook/manychat', async (req, res) => {
       });
     }
 
-    log.info('[manychat] Mesaj alındı', { senderId, len: messageText.length });
+    log.info('[manychat] Mesaj alındı', { senderId, len: messageText.length, cooldown: debounce.isInCooldown(senderId) });
 
     // İnsan devralma kontrolü
     if (isBotPaused(senderId)) {
@@ -534,7 +534,7 @@ app.post('/webhook/manychat', async (req, res) => {
         version: "v2",
         content: {
           type: channelType,
-          messages: [] // Boş içerik dönerek duplicate cevabı engelle
+          messages: []
         }
       });
     }
@@ -544,69 +544,98 @@ app.post('/webhook/manychat', async (req, res) => {
     const isNewMc = !(await hasUserBeenGreeted(senderId));
     trackEvent(senderId, 'message_received', channelType, { message_length: messageText.length, is_new_customer: isNewMc }).catch(() => {});
 
-    // Mesajı kuyruğa al veya işle
-    const aiResponse = await processSyncWebhook(senderId, messageText, async (combinedMsg) => {
-      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
-      
-      await addMessage(senderId, 'user', combinedMsg);
+    // ═══ DEBOUNCE: Mesajı kuyruğa al ═══
+    // ManyChat sıralı (sequential) çalıştığı için, enqueue her mesaj için 
+    // yeni promise döner (concurrent mesaj gelmez). Ama cooldown sayesinde
+    // ardışık mesajlar arasında bağlantı kurulur.
+    const result = await debounce.enqueue(senderId, messageText);
 
-      // ═══ KATALOG TALEBİ BYPASS (ManyChat) ═══
-      if (isCatalogRequest(combinedMsg)) {
-        log.info('[manychat] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId });
-        trackEvent(senderId, 'catalog_request_bypass', channelType, { original_message: combinedMsg }).catch(() => {});
-        enqueueFollowup(senderId, channelType).catch(() => {});
-        if (isFirstMessageEver) {
-          await markUserAsGreeted(senderId);
-          await addMessage(senderId, 'assistant', GREETING_MESSAGE);
-        }
-        await addMessage(senderId, 'assistant', CATALOG_MESSAGE);
-        return isFirstMessageEver ? [GREETING_MESSAGE, CATALOG_MESSAGE] : CATALOG_MESSAGE;
-      }
-
-      const currentState = await getState(senderId);
-      currentState.platform = channelType;
-      const [catalog, history] = await Promise.all([
-        getCatalog(),
-        getHistory(senderId)
-      ]);
-      const aiStartTime = Date.now();
-      const respObj = await generateResponse(combinedMsg, history, catalog, currentState, senderId);
-      const responseTimeMs = Date.now() - aiStartTime;
-      const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
-      if (respObj.stateUpdates) {
-        await updateState(senderId, respObj.stateUpdates);
-      }
-
-      // Analytics tracking
-      analyzeAndTrack(senderId, combinedMsg, respObj.text, channelType, {
-        responseTimeMs,
-        toolCalled: respObj.toolCallInfo?.toolCalled,
-        queryUsed: respObj.toolCallInfo?.queryUsed,
-        resultCount: respObj.toolCallInfo?.resultCount,
-        productCodes: respObj.toolCallInfo?.productCodes
-      }).catch(() => {});
-
-      // Followup kuyruğuna ekle
-      enqueueFollowup(senderId, channelType).catch(() => {});
-      
-      if (isFirstMessageEver) {
-        await markUserAsGreeted(senderId);
-        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
-      }
-      
-      await addMessage(senderId, 'assistant', aiResponseText);
-      triggerAudit(senderId);
-      return isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
-    });
-
-    if (aiResponse === null) {
+    if (!result) {
+      // Concurrent durumda: mesaj kuyruğa eklendi, ilk çağrı bekliyor
       return res.json({
         version: "v2",
         content: { type: channelType, messages: [] }
       });
     }
 
-    log.info('[manychat] Cevap üretildi', { senderId, len: Array.isArray(aiResponse) ? aiResponse.length : aiResponse.length });
+    // Debounce süresi doldu — birleştirilmiş mesajlarla AI cevabı üret
+    const { combined: combinedMsg, messages: debouncedMsgs } = result;
+
+    if (debouncedMsgs.length > 1) {
+      log.info(`[manychat] ${debouncedMsgs.length} mesaj debounce ile birleştirildi`, { senderId });
+    }
+
+    if (/^s[ıi]f[ıi]rla$/i.test(combinedMsg.trim())) {
+      await clearHistory(senderId);
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages: [{ type: "text", text: "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz." }] },
+        text: "Hafıza başarıyla sıfırlandı."
+      });
+    }
+
+    // ═══ AI İŞLEME ═══
+    const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
+    
+    await addMessage(senderId, 'user', combinedMsg);
+
+    // ═══ KATALOG TALEBİ BYPASS (ManyChat) ═══
+    if (isCatalogRequest(combinedMsg)) {
+      log.info('[manychat] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId });
+      trackEvent(senderId, 'catalog_request_bypass', channelType, { original_message: combinedMsg }).catch(() => {});
+      enqueueFollowup(senderId, channelType).catch(() => {});
+      if (isFirstMessageEver) {
+        await markUserAsGreeted(senderId);
+        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+      }
+      await addMessage(senderId, 'assistant', CATALOG_MESSAGE);
+      const aiResponse = isFirstMessageEver ? [GREETING_MESSAGE, CATALOG_MESSAGE] : CATALOG_MESSAGE;
+      const messages = Array.isArray(aiResponse) 
+        ? aiResponse.map(msg => ({ type: "text", text: msg })) 
+        : [{ type: "text", text: aiResponse }];
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages },
+        text: Array.isArray(aiResponse) ? aiResponse.join('\n\n') : aiResponse
+      });
+    }
+
+    const currentState = await getState(senderId);
+    currentState.platform = channelType;
+    const [catalog, history] = await Promise.all([
+      getCatalog(),
+      getHistory(senderId)
+    ]);
+    const aiStartTime = Date.now();
+    const respObj = await generateResponse(combinedMsg, history, catalog, currentState, senderId);
+    const responseTimeMs = Date.now() - aiStartTime;
+    const aiResponseText = processAiResponseWithTelegram(respObj.text, senderId, combinedMsg);
+    if (respObj.stateUpdates) {
+      await updateState(senderId, respObj.stateUpdates);
+    }
+
+    // Analytics tracking
+    analyzeAndTrack(senderId, combinedMsg, respObj.text, channelType, {
+      responseTimeMs,
+      toolCalled: respObj.toolCallInfo?.toolCalled,
+      queryUsed: respObj.toolCallInfo?.queryUsed,
+      resultCount: respObj.toolCallInfo?.resultCount,
+      productCodes: respObj.toolCallInfo?.productCodes
+    }).catch(() => {});
+
+    // Followup kuyruğuna ekle
+    enqueueFollowup(senderId, channelType).catch(() => {});
+    
+    if (isFirstMessageEver) {
+      await markUserAsGreeted(senderId);
+      await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+    }
+    
+    await addMessage(senderId, 'assistant', aiResponseText);
+    triggerAudit(senderId);
+    const aiResponse = isFirstMessageEver ? [GREETING_MESSAGE, aiResponseText] : aiResponseText;
+
+    log.info('[manychat] Cevap üretildi', { senderId, msgCount: debouncedMsgs.length, len: typeof aiResponse === 'string' ? aiResponse.length : aiResponse.length });
 
     // ManyChat Dynamic Block v2 formatında cevap dön
     const messages = Array.isArray(aiResponse) 
