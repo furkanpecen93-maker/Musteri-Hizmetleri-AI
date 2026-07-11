@@ -155,7 +155,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
           },
           anlasmali_kargo: {
             type: "BOOLEAN",
-            description: "Müşteri 'bizim kargomuzla gelsin' (anlaşmalı kargo) isterse true, 'kendi kargomla' derse veya belirtmezse false gönder."
+            description: "Müşteri aksini belirtmedikçe HER ZAMAN true gönder (Varsayılan olarak anlaşmalı kargomuzla gönderiyoruz). Sadece müşteri açıkça 'kendi anlaşmalı kargomla' derse false gönder."
           }
         },
         required: ["sepet", "anlasmali_kargo"]
@@ -350,7 +350,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
       kargo_notu: args.anlasmali_kargo ? `(Anlaşmalı kargo ile gönderim: ${toplamSeri} seri * 40 TL)` : "(Müşterinin kendi kargosu ile gönderim, ücret yansıtılmadı)",
       genel_toplam: genelToplam,
       detaylar: hesapDetaylari,
-      ai_talimati: "Bu bilgileri müşteriye çok nazik ve DOĞAL bir Türkçe ile ilet. Matematik işlemi GÖSTERME, sadece sonucu söyle. Örneğin: 'Siparişinizin toplam ürün tutarı X TL, kargo ücretimiz Y TL, genel toplam Z TL tutmaktadır.'"
+      ai_talimati: "Bu bilgileri müşteriye çok nazik ve DOĞAL bir Türkçe ile ilet. Ürün tutarını, kargo tutarını ve KARGO DAHİL genel toplamı AÇIKÇA belirt. Matematik işlemi GÖSTERME. Örneğin: 'Siparişinizin toplam ürün tutarı X TL, kargo ücretimiz Y TL'dir. Kargo tutarı da eklenerek ödenecek genel toplam Z TL tutmaktadır.'"
     };
 
     toolCallInfo = {
