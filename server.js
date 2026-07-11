@@ -511,7 +511,16 @@ app.post('/webhook/telegram', (req, res) => {
 // 3. WHATSAPP AUTORESPONDER WEBHOOK
 // Android AutoResponder uygulaması buraya POST atar
 let lastWaPayload = {};
-app.get('/debug-wa', (req, res) => res.json(lastWaPayload));
+app.get('/debug-wa', (req, res) => {
+  const activePauses = {};
+  const now = Date.now();
+  for (const [sId, entry] of humanTakeover.entries()) {
+    if (now < entry.pauseUntil) {
+      activePauses[sId] = { reason: entry.reason, remainingMin: Math.round((entry.pauseUntil - now) / 60000) };
+    }
+  }
+  res.json({ lastPayload: lastWaPayload, activePauses });
+});
 
 app.post('/webhook/whatsapp', async (req, res) => {
   try {
@@ -557,8 +566,14 @@ app.post('/webhook/whatsapp', async (req, res) => {
 
     // İnsan devralma kontrolü
     if (isBotPaused(senderId)) {
-      log.info(`[takeover] Bot duraklatılmış, WhatsApp mesajı atlanıyor`, { senderId });
+      log.info(`[takeover] ✅ Bot duraklatılmış, WhatsApp mesajı ATLANIYOR`, { senderId, messagePreview: messageText.substring(0, 50) });
       return res.json({ reply: '', replies: [] });
+    } else {
+      // Eğer Map'te başka sender'lar varsa, uyumsuzluk olabilir — logla
+      if (humanTakeover.size > 0) {
+        const activeKeys = [...humanTakeover.keys()];
+        log.info(`[takeover] Bot aktif, mevcut pause kayıtları:`, { senderId, activeKeys });
+      }
     }
 
     // Duplicate kontrolü
