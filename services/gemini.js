@@ -232,7 +232,7 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
   }
 
   // Fonksiyon Çağrısı Kontrolü (while döngüsü ile çoklu tool call desteği)
-  let functionCall = data?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+  let functionCall = data?.candidates?.[0]?.content?.parts?.find(p => p.functionCall)?.functionCall;
   let toolCallCount = 0;
   
   while (functionCall && toolCallCount < 3) {
@@ -385,11 +385,12 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     }
     
     // Döngü devam etmeden önce yeni gelen datada functionCall var mı diye bakıyoruz
-    functionCall = data?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+    functionCall = data?.candidates?.[0]?.content?.parts?.find(p => p.functionCall)?.functionCall;
   }
 
   try {
-    const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const aiText = parts.map(p => p.text || '').join('').trim();
     
     if (!aiText) {
       log.warn('[gemini] Boş cevap döndü', data);
