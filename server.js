@@ -535,7 +535,12 @@ app.post('/webhook/manychat', async (req, res) => {
     const channelType = req.query.platform || 'instagram';
 
     if (!messageText) {
-      return res.status(400).json({ error: 'Mesaj boş' });
+      log.warn('[manychat] Mesaj boş geldi, debug mesaji donuluyor', { senderId });
+      return res.json({
+        version: "v2",
+        content: { type: channelType, messages: [{ type: "text", text: "HATA: ManyChat sunucuya mesaj metnini (last_input_text) bos gonderdi. Lutfen ManyChat ayarlarinda 'Full Contact Data' yerine 'Custom JSON' kullanin." }] },
+        text: "HATA: ManyChat sunucuya mesaj metnini boş gönderdi. (Sistem hatası tespiti)"
+      });
     }
 
     log.info('[manychat] Mesaj alındı', { senderId, len: messageText.length });
