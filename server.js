@@ -633,12 +633,18 @@ app.post('/webhook/manychat', async (req, res) => {
       ? aiResponse.map(msg => ({ type: "text", text: msg })) 
       : [{ type: "text", text: aiResponse }];
 
+    // Response mapping için: tüm mesajları birleştirilmiş tek metin
+    const allText = Array.isArray(aiResponse) 
+      ? aiResponse.join('\n\n') 
+      : aiResponse;
+
     return res.json({
       version: "v2",
       content: {
         type: channelType,
         messages: messages
-      }
+      },
+      text: allText
     });
   } catch (err) {
     log.error('[manychat] Hata', err);
