@@ -34,6 +34,9 @@ function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
   // İngilizce iç monolog cümleleri (rule referansları dahil)
   cleanedText = cleanedText.replace(/(?:^|\n)\s*(?:Since there'?s|I should|I need to|The user is|The customer is|Based on the rules|According to|Let me think|I will respond|I notice that|I can see that|rule \d)[^\n]*(?:\n(?!\n)[^\n]*)*/gi, '');
   
+  // ═══ YAPAY ZEKA KİMLİĞİ SIZINTISI TEMİZLEME ═══
+  cleanedText = cleanedText.replace(/[^\n]*(?:ben\s*bir\s*(?:yapay\s*zeka|bot|sanal\s*asistan|dijital\s*asistan|AI)\s*(?:olduğum|olarak)|ruh\s*halim\s*(?:yok|bulunmamaktadır|olmadığı)|duygu\s*durumum\s*(?:yok|bulunmamaktadır)|programlandığım|bir\s*makine\s*olarak)[^\n]*/gi, '');
+  
   // Çoklu boş satırları temizle
   cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n').trim();
   
