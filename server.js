@@ -450,9 +450,10 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
   try {
     let pending = [initialMessage];
 
-    // Peş peşe gelen mesajları toplamak için bekle
+    // Peş peşe gelen mesajları toplamak için bekle (ManyChat timeout 10 sn olduğu için daha kısa bekliyoruz)
+    const SYNC_COALESCE_MS = 2000;
     for (let iter = 0; iter < COALESCE_MAX_ITER; iter++) {
-      await sleep(iter === 0 ? COALESCE_INITIAL_MS : COALESCE_STRAGGLER_MS);
+      await sleep(iter === 0 ? SYNC_COALESCE_MS : COALESCE_STRAGGLER_MS);
       if (lockEntry.queue.length > 0) {
         pending = pending.concat(lockEntry.queue.splice(0));
         if (iter < COALESCE_MAX_ITER - 1) continue;

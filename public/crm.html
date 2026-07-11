@@ -2,7 +2,9 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Müşteri Hizmetleri AI - Canlı Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="crm.css">
@@ -115,9 +117,12 @@
                         <span class="status online" id="bot-status-text">Bot Aktif</span>
                     </div>
                 </div>
-                <div class="chat-actions">
+                <div class="chat-actions" style="display: flex; gap: 5px;">
+                    <button id="mobile-profile-btn" class="btn btn-icon" style="display: none;">
+                        <i class="fa-solid fa-address-card"></i>
+                    </button>
                     <button id="toggle-pause-btn" class="btn btn-pause">
-                        <i class="fa-solid fa-pause"></i> Botu Sustur
+                        <i class="fa-solid fa-pause"></i> <span class="hide-on-mobile">Botu Sustur</span>
                     </button>
                 </div>
             </div>
@@ -204,19 +209,21 @@
                 <button class="btn btn-primary" onclick="document.getElementById('manual-customer-modal').style.display='flex'"><i class="fa-solid fa-plus"></i> Yeni Ekle</button>
             </div>
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
-                <table style="width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border);">
-                            <th style="padding: 15px;">Müşteri No/Tel</th>
-                            <th style="padding: 15px;">Durum</th>
-                            <th style="padding: 15px;">Öncelik</th>
-                            <th style="padding: 15px;">Son İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customers-table-body">
-                        <!-- JS ile dolacak -->
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border);">
+                                <th style="padding: 15px;">Müşteri No/Tel</th>
+                                <th style="padding: 15px;">Durum</th>
+                                <th style="padding: 15px;">Öncelik</th>
+                                <th style="padding: 15px;">Son İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table-body">
+                            <!-- JS ile dolacak -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -282,6 +289,8 @@
             </div>
         </div>
     </div>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <script src="crm.js"></script>
 </body>

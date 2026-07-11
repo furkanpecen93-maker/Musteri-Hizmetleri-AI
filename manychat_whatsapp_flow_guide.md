@@ -54,11 +54,27 @@ Bu rehber, WhatsApp Business hesabınızı ManyChat üzerinden sunucumuzdaki Yap
    | **Request URL** | `https://musteri-hizmetleri-ai-production-f980.up.railway.app/webhook/manychat?platform=whatsapp` |
    | **Headers** | `Content-Type: application/json` |
    | **Body** | ✅ **"Full Contact Data"** seçin |
-   | **Response** | ✅ **"Dynamic Block"** switch'ini aktif edin |
 
    > **ÖNEMLİ:** URL'deki `?platform=whatsapp` parametresi kritiktir. Bu parametre sunucumuza mesajın WhatsApp'tan geldiğini bildirir.
 
-4. **"Test Request"** butonuyla bağlantıyı test edin → `Dynamic Block parsed successfully` mesajı almalısınız.
+   > **WHATSAPP DİNAMİK BLOK UYARISI:** ManyChat'in "Dynamic Block" özelliği WhatsApp'ta (Meta kuralları gereği) her zaman düzgün çalışmayabilir veya cevaplar müşteriye ulaşmayabilir. Bu nedenle WhatsApp için Dynamic Block YERİNE **Response Mapping (Değişken Eşleştirme)** yöntemi kullanmalıyız.
+
+4. **Response Mapping (Çıktıyı Değişkene Atama):**
+   - External Request penceresinin alt kısmında yer alan **"Response Mapping"** bölümüne gidin.
+   - **JSONPath** kısmına `$.text` yazın.
+   - **Custom Field** kısmında yeni bir alan oluşturun (örneğin: `AI_Yanit`) ve onu seçin.
+   - Bu işlem, yapay zekanın ürettiği metni `AI_Yanit` adlı bir değişkene kaydeder.
+
+5. **"Test Request"** butonuyla bağlantıyı test edin. (200 OK görmelisiniz).
+
+---
+
+## 6. Yanıtı Göstermek İçin Mesaj Kartı Ekleme
+
+1. External Request (Harici İstek) kartından sonra yeni bir adım ekleyin.
+2. **"WhatsApp"** seçip bir **"Send Message"** (Mesaj Gönder) kartı oluşturun.
+3. Mesaj metni alanına sadece daha önce oluşturduğunuz değişkeni ekleyin: `{AI_Yanit}` (Süslü parantez butonuna basarak seçebilirsiniz).
+4. Bu sayede yapay zekanın değişken içine kaydettiği metin müşteriye WhatsApp mesajı olarak gönderilmiş olur.
 
 ---
 
