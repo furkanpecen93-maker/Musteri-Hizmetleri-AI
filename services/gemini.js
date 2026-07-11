@@ -231,11 +231,15 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     return { text: 'Mesajınızı aldım, şu an sistem yoğunluğundan dolayı cevaplayamıyorum. Size en kısa sürede dönüş yapacağız.', stateUpdates: {}, toolCallInfo };
   }
 
-  // Fonksiyon Çağrısı Kontrolü
+  // Fonksiyon Çağrısı Kontrolü (while döngüsü ile çoklu tool call desteği)
   let functionCall = data?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
-  if (functionCall && functionCall.name === "urun_sorgula") {
-    log.info(`[gemini] FUNCTION CALL TETİKLENDİ: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
-    const query = functionCall.args.query;
+  let toolCallCount = 0;
+  
+  while (functionCall && toolCallCount < 3) {
+    toolCallCount++;
+    if (functionCall.name === "urun_sorgula") {
+      log.info(`[gemini] FUNCTION CALL TETİKLENDİ: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
+      const query = functionCall.args.query || "";
     const results = searchProducts(query);
 
     // Analytics için tool call bilgisi kaydet
@@ -264,11 +268,11 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     });
     
     // İkinci kez API'ye istek at
-    data = await makeGeminiRequest(payload);
-    if (!data) {
-      return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {}, toolCallInfo };
-    }
-  } else if (functionCall && functionCall.name === "satis_kaydet") {
+      data = await makeGeminiRequest(payload);
+      if (!data) {
+        return { text: 'Detayları kontrol ettim ancak şu an sistem yoğunluğundan dolayı cevaplayamıyorum. İsterseniz sizi arkadaşlarıma bağlayayım. [DEVRET]', stateUpdates: {}, toolCallInfo };
+      }
+    } else if (functionCall.name === "satis_kaydet") {
     log.info(`[gemini] SATIS KAYDEDILIYOR: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
     const amount = functionCall.args.amount;
     if (senderId) {
@@ -293,11 +297,11 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     });
     
     // İkinci kez API'ye istek at
-    data = await makeGeminiRequest(payload);
-    if (!data) {
-      return { text: 'Siparişinizi kaydettik, teşekkür ederiz.', stateUpdates: {}, toolCallInfo };
-    }
-  } else if (functionCall && functionCall.name === "siparis_hesapla") {
+      data = await makeGeminiRequest(payload);
+      if (!data) {
+        return { text: 'Siparişinizi kaydettik, teşekkür ederiz.', stateUpdates: {}, toolCallInfo };
+      }
+    } else if (functionCall.name === "siparis_hesapla") {
     log.info(`[gemini] HESAPLAMA YAPILIYOR: ${functionCall.name} (args: ${JSON.stringify(functionCall.args)})`);
     const args = functionCall.args;
     let genelToplam = 0;
@@ -372,10 +376,16 @@ async function generateResponse(userMessage, conversationHistory = [], catalogDa
     });
     
     // İkinci kez API'ye istek at
-    data = await makeGeminiRequest(payload);
-    if (!data) {
-      return { text: 'Hesaplamanızı yaptım ancak bir sorun oluştu. Sizi arkadaşıma bağlıyorum. [DEVRET]', stateUpdates: {}, toolCallInfo };
+      data = await makeGeminiRequest(payload);
+      if (!data) {
+        return { text: 'Hesaplamanızı yaptım ancak bir sorun oluştu. Sizi arkadaşıma bağlıyorum. [DEVRET]', stateUpdates: {}, toolCallInfo };
+      }
+    } else {
+      break;
     }
+    
+    // Döngü devam etmeden önce yeni gelen datada functionCall var mı diye bakıyoruz
+    functionCall = data?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
   }
 
   try {
