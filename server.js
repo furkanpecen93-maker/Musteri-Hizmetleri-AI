@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const cron = require('node-cron');
 const { config } = require('./config/env');
 const log = require('./utils/logger');
-const { sendTelegramNotification, sendTelegramReport, setPauseCallback } = require('./utils/telegram');
+const { sendTelegramNotification, sendTelegramReport, setPauseCallback, startPolling, handleCallbackQuery } = require('./utils/telegram');
 const { generateResponse } = require('./services/gemini');
 const { sendInstagramMessage, sendMessengerMessage } = require('./services/meta_api');
 const { getCatalog } = require('./services/catalog');
@@ -189,6 +189,9 @@ function pauseBotForSender(senderId, reason = 'echo') {
 }
 // Telegram üzerinden manuel susturma talebi gelirse bu fonksiyonu çağır
 if (setPauseCallback) setPauseCallback((senderId) => pauseBotForSender(senderId, 'Telegram manuel devralma'));
+
+// Telegram webhook/polling başlatma — sunucu dinlemeye başladıktan sonra yapılacak
+// (Aşağıda app.listen callback'i içinde)
 
 function isBotPaused(senderId) {
   const entry = humanTakeover.get(senderId);
@@ -475,6 +478,34 @@ async function processSyncWebhook(senderId, initialMessage, handler) {
   }
 }
 
+
+// ══════════════════════════════════════════════
+// 2.5. TELEGRAM CALLBACK WEBHOOK (Polling'e yedek)
+// Telegram webhook set edilirse callback_query'ler buraya gelir
+// ══════════════════════════════════════════════
+app.post('/webhook/telegram', (req, res) => {
+  try {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) { body = {}; }
+    }
+    
+    log.info('[telegram-webhook] Update alındı', { 
+      hasCallbackQuery: !!body.callback_query,
+      updateId: body.update_id 
+    });
+    
+    // Callback query (buton tıklaması) işle
+    if (body.callback_query) {
+      handleCallbackQuery(body.callback_query);
+    }
+    
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    log.error('[telegram-webhook] Hata', err);
+    res.status(200).json({ ok: true }); // Telegram'a her zaman 200 dön
+  }
+});
 
 // ══════════════════════════════════════════════
 // 3. WHATSAPP AUTORESPONDER WEBHOOK
@@ -1351,13 +1382,52 @@ app.get('/admin/report/test', async (req, res) => {
 // ══════════════════════════════════════════════
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-app.listen(config.port, '0.0.0.0', () => {
+app.listen(config.port, '0.0.0.0', async () => {
   log.info(`[server] ${config.businessName} Müşteri Hizmetleri AI başlatıldı`, {
     port: config.port,
     gemini: config.geminiApiKey ? '✅' : '❌',
     meta: config.metaPageAccessToken ? '✅' : '❌',
     sheets: config.googleSheetsId ? '✅' : '❌'
   });
+
+  // ── Telegram: Webhook set et, başarısız olursa polling'e düş ──
+  try {
+    const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : (process.env.RAILWAY_STATIC_URL 
+        ? `https://${process.env.RAILWAY_STATIC_URL}` 
+        : (process.env.PORT ? 'https://musteri-hizmetleri-ai-production-f980.up.railway.app' : null));
+    
+    if (railwayUrl) {
+      const webhookUrl = `${railwayUrl}/webhook/telegram`;
+      const { TELEGRAM_BOT_TOKEN } = require('./utils/telegram');
+      const setUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook`;
+      
+      const resp = await fetch(setUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: webhookUrl,
+          allowed_updates: ['callback_query'] // Sadece buton tıklamalarını al
+        })
+      });
+      const result = await resp.json();
+      
+      if (result.ok) {
+        log.info(`[telegram] ✅ Webhook başarıyla set edildi: ${webhookUrl}`);
+        // Webhook aktifken polling kullanma (Telegram kuralı: ikisi aynı anda çalışmaz)
+      } else {
+        log.warn(`[telegram] ❌ Webhook set edilemedi, polling'e geçiliyor`, result);
+        if (startPolling) startPolling();
+      }
+    } else {
+      log.info(`[telegram] Railway URL bulunamadı, polling kullanılıyor`);
+      if (startPolling) startPolling();
+    }
+  } catch (err) {
+    log.error(`[telegram] Webhook kurulumu hatası, polling'e geçiliyor`, err.message);
+    if (startPolling) startPolling();
+  }
 
   // ── Cron Job: Günlük Rapor (her gün saat 21:00 Türkiye saati = 18:00 UTC) ──
   if (config.dailyReportEnabled) {
