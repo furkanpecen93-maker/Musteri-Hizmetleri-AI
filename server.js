@@ -13,6 +13,7 @@ const { addMessage, getHistory, isDuplicate, getState, updateState, clearHistory
 const { trackEvent, analyzeAndTrack } = require('./services/analytics');
 const { enqueueFollowup, completeFollowup, cancelFollowup, processReminders } = require('./services/followup');
 const { sendDailyReport, generateDailyReport } = require('./services/daily_report');
+const debounce = require('./services/debounce');
 const fetch = require('node-fetch');
 
 function processAiResponseWithTelegram(aiResponseText, senderId, userMessage) {
@@ -171,11 +172,8 @@ app.get('/webhook', (req, res) => {
 // Instagram DM + Messenger mesajları burada gelir
 // ══════════════════════════════════════════════
 
-// Per-sender processing lock (burst coalesce)
-const processingLock = new Map();
-const COALESCE_INITIAL_MS = 7000;
-const COALESCE_STRAGGLER_MS = 3000;
-const COALESCE_MAX_ITER = 4;
+// Per-sender processing lock (AI üretimi sırasında yeni debounce başlatmayı engellemek için)
+const aiProcessingLock = new Set();
 
 // ── İnsan Devralma (Human Takeover) Sistemi ──
 // İnsan ekip bir müşteriye yazdığında bot 15 dk susar
@@ -268,17 +266,23 @@ app.post('/webhook', async (req, res) => {
           continue;
         }
 
-        // Burst coalesce — aynı kişi art arda mesaj atarsa birleştir
-        const existingLock = processingLock.get(senderId);
-        if (existingLock) {
-          existingLock.queue.push(messageText);
-          log.info(`[webhook] Burst kuyruğa eklendi`, { senderId, queueLen: existingLock.queue.length });
+        // ── DEBOUNCE: Mesajı kuyruğa al ──
+        // AI zaten bu sender için çalışıyorsa mesajı yine kuyruğa at (sonraki cycle'da işlenir)
+        if (aiProcessingLock.has(senderId)) {
+          log.info(`[webhook] AI çalışıyor, mesaj bir sonraki debounce cycle'ında işlenecek`, { senderId });
+          // Mesajı hafızaya ekle ki kaybolmasın
+          addMessage(senderId, 'user', messageText).catch(() => {});
           continue;
         }
 
-        // Yeni mesaj işleme başlat
-        processMessage(senderId, messageText, platform).catch(err => {
-          log.error(`[webhook] İşleme hatası`, err);
+        debounce.enqueue(senderId, messageText).then(result => {
+          if (result) {
+            // Debounce süresi doldu, birleştirilmiş mesajları işle
+            processMessage(senderId, result.combined, platform, result.messages.length).catch(err => {
+              log.error(`[webhook] İşleme hatası`, err);
+            });
+          }
+          // null = mesaj kuyruğa eklendi, ilk çağrı zaten bekliyor
         });
       }
     }
@@ -288,15 +292,16 @@ app.post('/webhook', async (req, res) => {
 });
 
 /**
- * Mesajı işle: burst coalesce → AI cevap üret → gönder
+ * Mesajı işle: debounce sonrası birleştirilmiş mesaj → AI cevap üret → gönder
+ * @param {string} senderId
+ * @param {string} combinedMessage - Debounce tarafından birleştirilmiş mesaj(lar)
+ * @param {string} platform
+ * @param {number} messageCount - Kaç mesaj birleştirildi
  */
-async function processMessage(senderId, initialMessage, platform) {
-  const lockEntry = { queue: [] };
-  processingLock.set(senderId, lockEntry);
+async function processMessage(senderId, combinedMessage, platform, messageCount = 1) {
+  aiProcessingLock.add(senderId);
 
   try {
-    let pending = [initialMessage];
-
     // Müşteri mesaj attı — mevcut followup'ı kapat (müşteri döndü)
     completeFollowup(senderId).catch(() => {});
 
@@ -305,178 +310,144 @@ async function processMessage(senderId, initialMessage, platform) {
 
     // Analytics: mesaj alındı
     trackEvent(senderId, 'message_received', platform, {
-      message_length: initialMessage.length,
-      is_new_customer: isNewCustomer
+      message_length: combinedMessage.length,
+      is_new_customer: isNewCustomer,
+      debounced_count: messageCount
     }).catch(() => {});
 
-    for (let iter = 0; iter < COALESCE_MAX_ITER; iter++) {
-      await sleep(iter === 0 ? COALESCE_INITIAL_MS : COALESCE_STRAGGLER_MS);
-
-      if (lockEntry.queue.length > 0) {
-        pending = pending.concat(lockEntry.queue.splice(0));
-        if (iter < COALESCE_MAX_ITER - 1) continue;
-      }
-      break;
+    if (messageCount > 1) {
+      log.info(`[process] ${messageCount} mesaj debounce ile birleştirildi`, { senderId });
     }
 
-    processingLock.delete(senderId); // AI düşünürken gelenler yepyeni bir oturum başlatsın
-
-    // Mesajları birleştir
-    const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
-      if (pending.length > 1) {
-        log.info(`[process] ${pending.length} mesaj birleştirildi`, { senderId });
+    if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
+      clearHistory(senderId);
+      const wipeMsg = 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.';
+      if (platform === 'instagram') {
+        await sendInstagramMessage(senderId, wipeMsg);
+      } else {
+        await sendMessengerMessage(senderId, wipeMsg);
       }
+      return;
+    }
 
-      if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
-        clearHistory(senderId);
-        const wipeMsg = 'Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.';
-        if (platform === 'instagram') {
-          await sendInstagramMessage(senderId, wipeMsg);
-        } else {
-          await sendMessengerMessage(senderId, wipeMsg);
-        }
-        return;
+    // Kullanıcı mesajını kaydet
+    await addMessage(senderId, 'user', combinedMessage);
+
+    // Katalog ve geçmişi al
+    const [catalog, history] = await Promise.all([
+      getCatalog(),
+      Promise.resolve(getHistory(senderId))
+    ]);
+
+    // İlk mesaj kontrolü ve Karşılama
+    const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
+    if (isFirstMessageEver) {
+      await markUserAsGreeted(senderId);
+      await addMessage(senderId, 'assistant', GREETING_MESSAGE);
+      if (platform === 'instagram') {
+        await sendInstagramMessage(senderId, GREETING_MESSAGE);
+      } else {
+        await sendMessengerMessage(senderId, GREETING_MESSAGE);
       }
+    }
 
-      // Kullanıcı mesajını kaydet
-      await addMessage(senderId, 'user', combinedMessage);
+    // ═══ KATALOG TALEBİ BYPASS: AI'ya gitmeden direkt katalog linki gönder ═══
+    if (isCatalogRequest(combinedMessage)) {
+      log.info('[process] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId, platform });
+      const catalogResponse = CATALOG_MESSAGE;
+      addMessage(senderId, 'assistant', catalogResponse);
 
-      // Katalog ve geçmişi al
-      const [catalog, history] = await Promise.all([
-        getCatalog(),
-        Promise.resolve(getHistory(senderId))
-      ]);
-
-      // İlk mesaj kontrolü ve Karşılama
-      const isFirstMessageEver = !(await hasUserBeenGreeted(senderId));
-      if (isFirstMessageEver) {
-        await markUserAsGreeted(senderId);
-        await addMessage(senderId, 'assistant', GREETING_MESSAGE);
-        if (platform === 'instagram') {
-          await sendInstagramMessage(senderId, GREETING_MESSAGE);
-        } else {
-          await sendMessengerMessage(senderId, GREETING_MESSAGE);
-        }
-      }
-
-      // ═══ KATALOG TALEBİ BYPASS: AI'ya gitmeden direkt katalog linki gönder ═══
-      if (isCatalogRequest(combinedMessage)) {
-        log.info('[process] Katalog talebi tespit edildi, direkt katalog linki gönderiliyor', { senderId, platform });
-        const catalogResponse = CATALOG_MESSAGE;
-        addMessage(senderId, 'assistant', catalogResponse);
-        
-        // Analytics
-        trackEvent(senderId, 'catalog_request_bypass', platform, {
-          original_message: combinedMessage
-        }).catch(() => {});
-        
-        // Followup kuyruğuna ekle
-        enqueueFollowup(senderId, platform).catch(() => {});
-        
-        if (platform === 'instagram') {
-          await sendInstagramMessage(senderId, catalogResponse);
-        } else {
-          await sendMessengerMessage(senderId, catalogResponse);
-        }
-        
-        log.info('[process] Katalog linki gönderildi', { senderId, platform });
-        return;
-      }
-
-      // AI cevap üret (süre ölç)
-      const aiStartTime = Date.now();
-      const currentState = await getState(senderId);
-      currentState.platform = platform;
-      const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState, senderId);
-      const responseTimeMs = Date.now() - aiStartTime;
-      const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
-
-      if (aiResponseObj.stateUpdates) {
-        await updateState(senderId, aiResponseObj.stateUpdates);
-      }
-
-      // KESİN ÇÖZÜM (Foolproof check): Eğer yapay zeka JSON'da true yapmayı unutursa metinden yakala
-      const lowerResp = aiResponse.toLowerCase();
-      if (lowerResp.includes('nerede') || lowerResp.includes('hangi platform')) {
-        updateState(senderId, { hasAskedLocation: true });
-      }
-
-      // AI cevabını kaydet
-      addMessage(senderId, 'assistant', aiResponse);
-      triggerAudit(senderId);
-
-      // Analytics: bot cevabını ve AI davranışını takip et
-      analyzeAndTrack(senderId, combinedMessage, aiResponseObj.text, platform, {
-        responseTimeMs,
-        toolCalled: aiResponseObj.toolCallInfo?.toolCalled,
-        queryUsed: aiResponseObj.toolCallInfo?.queryUsed,
-        resultCount: aiResponseObj.toolCallInfo?.resultCount,
-        productCodes: aiResponseObj.toolCallInfo?.productCodes
+      // Analytics
+      trackEvent(senderId, 'catalog_request_bypass', platform, {
+        original_message: combinedMessage
       }).catch(() => {});
 
-      // Followup kuyruğuna ekle (bot cevap verdi, müşteri cevap verecek mi?)
+      // Followup kuyruğuna ekle
       enqueueFollowup(senderId, platform).catch(() => {});
 
-      // Platforma göre gönder
       if (platform === 'instagram') {
-        await sendInstagramMessage(senderId, aiResponse);
+        await sendInstagramMessage(senderId, catalogResponse);
       } else {
-        await sendMessengerMessage(senderId, aiResponse);
+        await sendMessengerMessage(senderId, catalogResponse);
       }
 
-      // Straggler kontrolü döngüsü kaldırıldı (işlemler döngü dışında)
+      log.info('[process] Katalog linki gönderildi', { senderId, platform });
+      return;
+    }
 
+    // AI cevap üret (süre ölç)
+    const aiStartTime = Date.now();
+    const currentState = await getState(senderId);
+    currentState.platform = platform;
+    const aiResponseObj = await generateResponse(combinedMessage, history, catalog, currentState, senderId);
+    const responseTimeMs = Date.now() - aiStartTime;
+    const aiResponse = processAiResponseWithTelegram(aiResponseObj.text, senderId, combinedMessage);
 
-    log.info(`[process] İşlem tamamlandı`, { senderId, platform });
+    if (aiResponseObj.stateUpdates) {
+      await updateState(senderId, aiResponseObj.stateUpdates);
+    }
+
+    // KESİN ÇÖZÜM (Foolproof check): Eğer yapay zeka JSON'da true yapmayı unutursa metinden yakala
+    const lowerResp = aiResponse.toLowerCase();
+    if (lowerResp.includes('nerede') || lowerResp.includes('hangi platform')) {
+      updateState(senderId, { hasAskedLocation: true });
+    }
+
+    // AI cevabını kaydet
+    addMessage(senderId, 'assistant', aiResponse);
+    triggerAudit(senderId);
+
+    // Analytics: bot cevabını ve AI davranışını takip et
+    analyzeAndTrack(senderId, combinedMessage, aiResponseObj.text, platform, {
+      responseTimeMs,
+      toolCalled: aiResponseObj.toolCallInfo?.toolCalled,
+      queryUsed: aiResponseObj.toolCallInfo?.queryUsed,
+      resultCount: aiResponseObj.toolCallInfo?.resultCount,
+      productCodes: aiResponseObj.toolCallInfo?.productCodes
+    }).catch(() => {});
+
+    // Followup kuyruğuna ekle (bot cevap verdi, müşteri cevap verecek mi?)
+    enqueueFollowup(senderId, platform).catch(() => {});
+
+    // Platforma göre gönder
+    if (platform === 'instagram') {
+      await sendInstagramMessage(senderId, aiResponse);
+    } else {
+      await sendMessengerMessage(senderId, aiResponse);
+    }
+
+    log.info(`[process] İşlem tamamlandı`, { senderId, platform, debounced: messageCount });
   } finally {
-    processingLock.delete(senderId);
+    aiProcessingLock.delete(senderId);
   }
 }
 
 /**
- * Senkron (HTTP Response bekleyen) Webhook'lar için Burst Coalesce (WhatsApp / ManyChat)
+ * Senkron (HTTP Response bekleyen) Webhook'lar için Debounce (WhatsApp / ManyChat)
+ * Debounce modülü ile mesajları birleştirip handler'a verir.
  */
 async function processSyncWebhook(senderId, initialMessage, handler) {
-  const existingLock = processingLock.get(senderId);
-  if (existingLock) {
-    existingLock.queue.push(initialMessage);
-    log.info(`[sync-webhook] Burst kuyruğa eklendi`, { senderId, queueLen: existingLock.queue.length });
-    return null; // Null dönüyoruz ki çağıran HTTP endpoint boş 200 OK dönsün
+  // Debounce kuyruğuna ekle
+  const result = await debounce.enqueue(senderId, initialMessage);
+
+  if (!result) {
+    // Bu mesaj kuyruğa eklendi, ilk çağrı zaten bekliyor
+    return null;
   }
 
-  const lockEntry = { queue: [] };
-  processingLock.set(senderId, lockEntry);
+  // Debounce süresi doldu, birleştirilmiş mesajlarla devam et
+  const { combined: combinedMessage, messages } = result;
 
-  try {
-    let pending = [initialMessage];
-
-    // Peş peşe gelen mesajları toplamak için bekle (ManyChat timeout 10 sn olduğu için daha kısa bekliyoruz)
-    const SYNC_COALESCE_MS = 2000;
-    for (let iter = 0; iter < COALESCE_MAX_ITER; iter++) {
-      await sleep(iter === 0 ? SYNC_COALESCE_MS : COALESCE_STRAGGLER_MS);
-      if (lockEntry.queue.length > 0) {
-        pending = pending.concat(lockEntry.queue.splice(0));
-        if (iter < COALESCE_MAX_ITER - 1) continue;
-      }
-      break;
-    }
-    
-    processingLock.delete(senderId); // Yeni mesajlar yeni döngü başlatsın
-
-    const combinedMessage = pending.length === 1 ? pending[0] : pending.join('\n');
-    if (pending.length > 1) {
-      log.info(`[sync-webhook] ${pending.length} mesaj birleştirildi`, { senderId });
-    }
-
-    if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
-      await clearHistory(senderId);
-      return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
-    }
-
-    return await handler(combinedMessage);
-  } finally {
-    processingLock.delete(senderId);
+  if (messages.length > 1) {
+    log.info(`[sync-webhook] ${messages.length} mesaj debounce ile birleştirildi`, { senderId });
   }
+
+  if (/^s[ıi]f[ıi]rla$/i.test(combinedMessage.trim())) {
+    await clearHistory(senderId);
+    return "Hafıza başarıyla sıfırlandı. Teste baştan başlayabilirsiniz.";
+  }
+
+  return await handler(combinedMessage);
 }
 
 
