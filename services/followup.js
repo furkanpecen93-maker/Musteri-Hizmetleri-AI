@@ -177,9 +177,9 @@ async function sendReminder(entry, type) {
     } else if (platform === 'messenger') {
       sent = await sendMessengerMessage(sender_id, message);
     } else if (platform === 'whatsapp') {
-      // WhatsApp AutoResponder — proaktif mesaj gönderilemez
+      // WhatsApp (ManyChat) — ManyChat Dynamic Block sadece yanıt verir, proaktif mesaj gönderilemez
+      // Not: ManyChat Pro API ile ilerde aktif gönderilebilir (Send Content API)
       log.info(`[followup] WhatsApp müşterisi, hatırlatma gönderilemez (raporda listelenecek)`, { sender_id });
-      // Yine de kaydı güncelle ki tekrar denemesin
       sent = false;
     }
 
