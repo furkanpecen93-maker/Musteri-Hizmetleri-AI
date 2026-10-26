@@ -116,6 +116,37 @@ const path = require('path');
 
 const app = express();
 
+// ══════════════════════════════════════════════
+// PASİF MOD (Kill Switch)
+// Railway'de AUTOMATION_PAUSED=true yapılırsa: sadece katalog linki ve /health çalışır.
+// Bot cevap vermez, CRM/admin kapalı, cron ve Telegram başlatılmaz.
+// Tekrar açmak için değişkeni silmek veya false yapmak yeterli.
+// ══════════════════════════════════════════════
+const AUTOMATION_PAUSED = String(process.env.AUTOMATION_PAUSED || '').toLowerCase() === 'true';
+
+if (AUTOMATION_PAUSED) {
+  app.use((req, res, next) => {
+    const p = req.path;
+    const isRead = req.method === 'GET' || req.method === 'HEAD';
+
+    // İzin verilenler: katalog sayfası, katalog PDF'leri, logo, health
+    if (isRead && (p === '/katalog' || p === '/index.html' || p === '/logo.png' || p.startsWith('/kataloglar/') || p === '/health')) {
+      return next();
+    }
+    // Meta webhook doğrulaması (yeniden açılınca abonelik bozulmasın)
+    if (req.method === 'GET' && p === '/webhook') return next();
+
+    // Webhook'lar: sessizce 200 dön (platformlar webhook'u devre dışı bırakmasın), işlem yapma
+    if (req.method === 'POST' && p === '/webhook') return res.status(200).send('EVENT_RECEIVED');
+    if (req.method === 'POST' && p === '/webhook/manychat') {
+      return res.json({ version: 'v2', content: { type: req.query.platform || 'instagram', messages: [] } });
+    }
+    if (req.method === 'POST' && p === '/webhook/telegram') return res.status(200).json({ ok: true });
+
+    return res.status(503).send('Sistem geçici olarak pasif.');
+  });
+}
+
 // Raw body for signature verification and debugging
 app.use((req, res, next) => {
   log.info(`[GELEN ISTEK] ${req.method} ${req.url}`);
@@ -150,7 +181,7 @@ app.get('/katalog', (req, res) => {
 });
 
 // Health check endpoint for monitoring (GitHub Actions)
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok', time: new Date().toISOString(), version: '2026-07-08-revert-clean' }));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok', paused: AUTOMATION_PAUSED, time: new Date().toISOString(), version: '2026-10-26-kill-switch' }));
 
 // ══════════════════════════════════════════════
 // 1. META WEBHOOK VERIFICATION (GET)
@@ -270,15 +301,9 @@ app.post('/webhook', async (req, res) => {
         }
 
         // ── DEBOUNCE: Mesajı kuyruğa al ──
-        // AI zaten bu sender için çalışıyorsa mesajı yine kuyruğa at (sonraki cycle'da işlenir)
-        if (aiProcessingLock.has(senderId)) {
-          log.info(`[webhook] AI çalışıyor, mesaj bir sonraki debounce cycle'ında işlenecek`, { senderId });
-          // Mesajı hafızaya ekle ki kaybolmasın
-          addMessage(senderId, 'user', messageText).catch(() => {});
-          continue;
-        }
-
-        debounce.enqueue(senderId, messageText).then(result => {
+        // 7 saniye (7000ms) bekleme süresi: Müşterinin art arda attığı mesajları yakalayıp 
+        // tek bir cevap üretmek için süreyi uzun tutuyoruz.
+        debounce.enqueue(senderId, messageText, 7000).then(result => {
           if (result) {
             // Debounce süresi doldu, birleştirilmiş mesajları işle
             processMessage(senderId, result.combined, platform, result.messages.length).catch(err => {
@@ -1123,6 +1148,11 @@ app.listen(config.port, '0.0.0.0', async () => {
     meta: config.metaPageAccessToken ? '✅' : '❌',
     sheets: config.googleSheetsId ? '✅' : '❌'
   });
+
+  if (AUTOMATION_PAUSED) {
+    log.warn('[server] ⏸️ PASİF MOD aktif (AUTOMATION_PAUSED=true) — sadece katalog linki çalışıyor. Telegram ve cron başlatılmadı.');
+    return;
+  }
 
   // ── Telegram: Webhook set et, başarısız olursa polling'e düş ──
   try {
